@@ -32,7 +32,7 @@
 <?php echo $__env->yieldContent('css'); ?>
 
 <!-- All Styles -->
-<link href="<?php echo e(URL::asset('css/app.css')); ?>" rel="stylesheet" />
+<link href="<?php echo e(URL::asset('css/app.css?ver='.time())); ?>" rel="stylesheet" />
 
 
 	<?php /**PATH /home/customer/www/staging.paraclete.ai/public_html/resources/views/layouts/header.blade.php ENDPATH**/ ?>

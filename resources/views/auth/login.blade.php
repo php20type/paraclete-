@@ -93,7 +93,9 @@
                         @endif                         
                                                
                     </div>
-
+                    
+                    <a href="{{ url('/login/facebook') }}">Login with Facebook</a>
+                    
                     <p class="fs-10 text-muted pt-3">{{ __('By continuing, you agree to our') }} <a href="{{ route('terms') }}" class="text-info">{{ __('Terms and Conditions') }}</a> {{ __('and') }} <a href="{{ route('privacy') }}" class="text-info">{{ __('Privacy Policy') }}</a></p>
 
                 </form>

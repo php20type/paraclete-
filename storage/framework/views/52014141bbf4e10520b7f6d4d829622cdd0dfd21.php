@@ -248,7 +248,7 @@
                                 <?php if(isset($template)): ?>
 								<div class="dropdown-selected">
 										<button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-											Select Template
+											Conversational Starters
 										</button>
 										<ul class="dropdown-menu s-dropdown-menu">
                                             <?php $__currentLoopData = $template; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $t): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -493,9 +493,10 @@ unset($__errorArgs, $__bag); ?>
 			})	
 			.then(data => {
 				
-				const eventSource = new EventSource("/user/chat/generate?message_code=" + active_id);				
+				const eventSource = new EventSource("/user/chat/generate?message="+message, {withCredentials: true});				
 				const response = document.getElementById(code);
 				const chatbubble = document.getElementById('chat-bubble-' + code);
+				let responseStarted = false;
 				
 				eventSource.onopen = function(e) {
 					response.innerHTML = '';
@@ -504,9 +505,11 @@ unset($__errorArgs, $__bag); ?>
 				eventSource.onmessage = function (e) {
 
 					if (e.data == "[DONE]") {
-                        loadChat(active_id);
+                        
 						msgerSendBtn.disabled = false
 						eventSource.close();
+						loadChat(active_id);
+
                         if( $('#isAudioSearch').val() == '1'){
 							fetch("/user/chat/audio-convert", { 
 								headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
@@ -522,19 +525,19 @@ unset($__errorArgs, $__bag); ?>
 							})
                         }
                         fetch("/user/chat/update-words", { 
-								headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
-								method: 'post',
-								 body: formData
-							 })
-                            .then(function(response){
-								return response.text();
+							headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
+							method: 'post',
+								body: formData
 							})
-							.then(function(result){
-								const parsedResult = JSON.parse(result);
-                                $("#balance").text(parsedResult.balance);
-                                $("#available_words").text(parsedResult.available_words);
-                                $("#available_words_prepaid").text(parsedResult.available_words_prepaid);
-						    })
+						.then(function(response){
+							return response.text();
+						})
+						.then(function(result){
+							const parsedResult = JSON.parse(result);
+							$("#balance").text(parsedResult.balance);
+							$("#available_words").text(parsedResult.available_words);
+							$("#available_words_prepaid").text(parsedResult.available_words_prepaid);
+						})
                     } else {
 						let txt = JSON.parse(e.data).choices[0].delta.content
 						if (txt !== undefined) {
@@ -782,7 +785,7 @@ unset($__errorArgs, $__bag); ?>
 	}
 
 	// Display chat messages (bot and user)
-	function appendMessage(img, side, text, code) {
+	function appendMessage(img, side, text, code , insertBefore) {
 		let msgHTML;
 		text = nl2br(text);
 
@@ -806,7 +809,13 @@ unset($__errorArgs, $__bag); ?>
 			</div>`;
 		}
 
-		msgerChat.insertAdjacentHTML("beforeend", msgHTML);
+		if (insertBefore) {
+				let secondToLastChild = msgerChat.lastElementChild.previousElementSibling;
+				secondToLastChild.insertAdjacentHTML("afterend", msgHTML);
+		}else{
+			msgerChat.insertAdjacentHTML("beforeend", msgHTML);
+		}
+
 		msgerChat.scrollTop += 500;
 	}
 

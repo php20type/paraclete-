@@ -243,17 +243,18 @@ class ChatController extends Controller
 	*/
     public function generateChat(Request $request) 
     {  
-        $message_code = $request->message_code;
+        
 		$webAccessBtn = session()->get('webAccessBtn');	
         	
         if (session()->has('webAccessBtn')) {	
                 session()->forget('webAccessBtn');	
         }
         
-        return response()->stream(function () use($message_code , $webAccessBtn) {
+        return response()->stream(function () use($webAccessBtn) {
             
             $open_ai = new OpenAi(config('services.openai.key'));
-            
+            $message_code = session()->get('message_code');
+
             # Apply proper model based on role and subsciption
             if (auth()->user()->group == 'user') {
                 $model = config('settings.default_model_user');
@@ -270,110 +271,180 @@ class ChatController extends Controller
 			$lastArray = end($messages);
             $lastQuestion = $lastArray['content'];
 
-			if ($webAccessBtn == '1') {
-
-                $google_result_data = $this->googleCustomSearch($lastQuestion);
-                $concatInst =  str_replace($this->inst,'',$google_result_data); 
-                $withGoogleSearch = $chat_message->chat;   
-
-                array_push($messages, ['role' => 'assistant', 'content' => $concatInst]);
-                array_push($withGoogleSearch, ['role' => 'assistant', 'content' => $google_result_data]);
-
-                $chat_message->messages = ++$chat_message->messages;
-                $chat_message->chat = $messages;
-                $chat_message->save();
-
-                if ($model == 'gpt-3.5-turbo' || $model == 'gpt-3.5-turbo-16k' || $model == 'gpt-4' || $model == 'gpt-4-32k') {
-                    $opts = [
-                        'model' => $model,
-                        'messages' => [
-                                   [
-                                       "role" => "system",
-                                       "content" => $this->inst,
-                                   ],
-                                   [
-                                       "role" => "assistant",
-                                       "content" => $google_result_data,
-                                   ],
-                               ] ,
-                        'temperature' => 1.0,
-                        'frequency_penalty' => 0,
-                        'presence_penalty' => 0,
-                        'stream' => true
-                    ];
-
-                } else {
-                    $opts = [
-                        'model' => 'gpt-3.5-turbo',
-                        'messages' => [
-                                   [
-                                       "role" => "system",
-                                       "content" => $this->inst,
-                                   ],
-                                   [
-                                       "role" => "assistant",
-                                       "content" => $google_result_data,
-                                   ],
-                               ] ,
-                        'temperature' => 1.0,
-                        'frequency_penalty' => 0,
-                        'presence_penalty' => 0,
-                        'stream' => true
-                    ];
-                }
-
-			}else {	
-
-                if ($model == 'gpt-3.5-turbo' || $model == 'gpt-3.5-turbo-16k' || $model == 'gpt-4' || $model == 'gpt-4-32k') {
-                    $opts = [
-                        'model' => $model,
-                        'messages' => $messages,
-                        'temperature' => 1.0,
-                        'frequency_penalty' => 0,
-                        'presence_penalty' => 0,
-                        'stream' => true
-                    ];
-
-                } else {
-                    $opts = [
-                        'model' => 'gpt-3.5-turbo',
-                        'messages' => $messages,
-                        'temperature' => 1.0,
-                        'frequency_penalty' => 0,
-                        'presence_penalty' => 0,
-                        'stream' => true
-                    ];
-                }
-            }
             $text = "";
-            
-            $complete = $open_ai->chat($opts, function ($curl_info, $data) use (&$text) {
-                if ($obj = json_decode($data) and $obj->error->message != "") {
-                    error_log(json_encode($obj->error->message));
-                } else {
-                    echo $data;
+            if ($webAccessBtn == '1') {
+                
+                $systemMessage = [
+                    "role" => "system",
+                    "content" => 'The current UTC date and time now is ' . gmdate('Y-m-d H:i:s') . " . Using your web access and web scraping capabilities, please find the most recent and reliable sources online regarding the user questions. Please summarize your findings in a clear, concise manner for easy understanding.",
+                ];
+                $mergedMessages = array_merge([$systemMessage], $messages);
+                $opts = [
+                    'model' => 'gpt-3.5-turbo-16k-0613',
+                    'messages' => $mergedMessages,
+                    'functions' => [
+                        [
+                            "name" => "web_search",
+                            "description"=>  "A search engine. useful for when you need to search the web. Please call the scrape function when searching for news.",
+                            "parameters"=>  [
+                              "type"=>  "object",
+                              "properties"=>  [
+                                "query"=> [
+                                  "type"=>  "string",
+                                  "description"=> "The information needed to search"
+                            ]
+                            ],
+                              "required"=>  ["query"]
+                            ]
+                        ],
+                        [
+                            "name" => "get_current_weather",
+                            "description"=>  "Get the current weather in a given location.",
+                            "parameters"=>  [
+                              "type"=>  "object",
+                              "properties"=>  [
+                                "location"=> [
+                                  "type"=>  "string",
+                                  "description"=> "The location need weather info"
+                            ]
+                            ],
+                              "required"=>  ["location"]
+                            ]
+                        ],
+                        [
+                            "name" => "web_scraper",
+                            "description"=>  "A web scraper. useful for when you need to scrape websites for additional information. Most useful for when gathering information for news.",
+                            "parameters"=>  [
+                              "type"=>  "object",
+                              "properties"=>  [
+                                "url"=> [
+                                  "type"=>  "string",
+                                  "description"=> "The web site url"
+                            ]
+                            ],
+                              "required"=>  ["url"]
+                            ]
+                        ]
+                    ],
+                    'temperature' => 1.0,
+                    'frequency_penalty' => 0,
+                    'presence_penalty' => 0,
+                    'stream' => true
+                ];
+            }else{
+                $opts = [
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => $messages,
+                    'temperature' => 1.0,
+                    'frequency_penalty' => 0,
+                    'presence_penalty' => 0,
+                    'stream' => true
+                ];
+            }
+            $arguments = '';
+            $isFunction = true;
+            $counter = 0; // prevent infinite loop
 
-                    $clean = str_replace("data: ", "", $data);
-                    $first = str_replace("}\n\n{", ",", $clean);
-    
-                    if(str_contains($first, 'assistant')) {
-                        $raw = str_replace('"choices":[{"delta":{"role":"assistant"', '"random":[{"alpha":{"role":"assistant"', $first);
-                        $response = json_decode($raw, true);
+            while ($counter<5){
+                $open_ai->chat($opts, function ($curl_info, $data) use (&$text, &$arguments, &$opts, &$counter, &$isFunction, &$messages) {
+                    if ($obj = json_decode($data) and $obj->error->message != "") {
+                        error_log(json_encode($obj->error->message));
                     } else {
-                        $response = json_decode($clean, true);
-                    }    
+                        $response = null;
+
+                        $chunks = explode('data: ', $data);
+
+                        $dataSent = false;
+                        foreach ($chunks as $chunk) {
+                            $trimmed_chunk = trim($chunk);
+                            
+                            if (!empty($trimmed_chunk)) {
+                                $response = json_decode($trimmed_chunk, true);
+                                $delta = null;
+                                if(isset($response["choices"])){
+                                    $delta = $response["choices"][0]["delta"];
+                                }
+                                if (isset($delta['function_call'])) {
+                                    if (isset($delta['function_call']['arguments'])) {
+                                        $arguments .= $delta['function_call']['arguments'];
+                                    }
+            
+                                }
+                                else if(isset($response["choices"][0]['finish_reason']) && $response["choices"][0]['finish_reason'] == 'function_call'){
+                                    $jsonData = json_decode($arguments);
+                                    $process = '';
+                                    
+                                    if(isset($jsonData->location)){
+                                        $process = "Getting weather location for $jsonData->location";
+                                        echo 'data: {"choices":[{"index":0,"delta":{"process":true,"content":"' . $process .'"}}]}' . "\n\n";
+                                        echo PHP_EOL;
+                                        ob_flush();
+                                        flush();
+
+                                        array_push($messages, ['role' => 'assistant', 'content' => $process]);
         
-                    if ($data != "data: [DONE]\n\n" and isset($response["choices"][0]["delta"]["content"])) {
-                        $text .= $response["choices"][0]["delta"]["content"];
+                                        $content = getWeather($jsonData);
+                                    }
+                                    else if(isset($jsonData->query)){
+                                        $process = "Searching for $jsonData->query";
+                                        echo 'data: {"choices":[{"index":0,"delta":{"process":true,"content":"' . $process .'"}}]}' . "\n\n";
+                                        echo PHP_EOL;
+                                        ob_flush();
+                                        flush();
+
+                                        array_push($messages, ['role' => 'assistant', 'content' => $process]);
+                                        //
+                                        array_push($opts['messages'], ['role' => 'user', 'content' => 'when searching if and only if you need more information to provide a more complete answer Please scrape into the urls as additional research. Scrape a url only once. If encounter problem scraping url, try other urls from the web search.']);
+
+                                        $content = webSearch($jsonData);
+                                    }
+                                    else if(isset($jsonData->url)){
+                                        $process = "Reading contents of $jsonData->url";
+                                        echo 'data: {"choices":[{"index":0,"delta":{"process":true,"content":"' . $process .'"}}]}' . "\n\n";
+                                        echo PHP_EOL;
+                                        ob_flush();
+                                        flush();
+
+                                        array_push($messages, ['role' => 'assistant', 'content' => $process]);
+        
+                                        $content = webScrape($jsonData);
+                                    }
+        
+                                    $arguments = '';
+                                    ++$counter;
+        
+                                    array_push($opts['messages'], $content);
+                                }
+                                else if(isset($delta['content'])){ 
+                        
+                                    if (isset($response["choices"][0]["delta"]["content"])) {
+                                        $text .= $response["choices"][0]["delta"]["content"];
+                                        $isFunction = false;
+                                    }
+                                    if(!$dataSent){
+                                        echo $data;
+                                        echo PHP_EOL;
+                                        ob_flush();
+                                        flush();
+                                        $dataSent = true;
+                                    }
+
+                                }
+                                else if(isset($response["choices"][0]['finish_reason']) && $response["choices"][0]['finish_reason'] == 'stop'){
+                                    echo $data;
+                                    $counter = 5;
+                                    echo PHP_EOL;
+                                    ob_flush();
+                                    flush();
+                                }
+                            }
+                        }
+
+                        return strlen($data);
                     }
-                }
-
-                echo PHP_EOL;
-                ob_flush();
-                flush();
-                return strlen($data);
-            });
-
+                    
+                });
+            }
             # Update credit balance
             $words = count(explode(' ', ($text)));
             if ($webAccessBtn == '1') {
@@ -385,14 +456,11 @@ class ChatController extends Controller
             $chat_message->messages = ++$chat_message->messages;
             $chat_message->chat = $messages;
             $chat_message->save();
-           
         }, 200, [
             'Cache-Control' => 'no-cache',
             'Content-Type' => 'text/event-stream',
-        ]);
-        
+        ]); 
     }
-
 
     /**
 	*
@@ -657,70 +725,92 @@ class ChatController extends Controller
     }
 
     function googleCustomSearch($search_key)
-	{
-  		$search_result = [];
-  		$search_result_string = '';
-  		if (!empty($search_key)) {
-			$searchQ = trim($search_key);
-			$ch = curl_init();
-			//$cr = "cr=" . urlencode($searchQ);
-            $cr = "";
-			$cx = "&cx=82a52554294294369";
-			//$lr = "&lr=" . urlencode($searchQ);
-            $lr = "lang_en";
-			$q = "&q=" . urlencode($searchQ);
-			$safe = "";
-			$alt = "&alt=json";
-			$num = "&num=5";
-			//$prettyPrint = "&prettyPrint=true";
-            $prettyPrint = "";
-			//$general = "&%24.xgafv=1";
-            $general = "";
-			$key = "key=AIzaSyCNKAVmTCelLTeAxPGq_ShbIGfdv6WRaV4";
+{
+    $search_result = [];
 
-			curl_setopt($ch, CURLOPT_URL, 'https://customsearch.googleapis.com/customsearch/v1?'.$key.$cx.$q);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-			curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
+    $search_result_string = '';
+    if (!empty($search_key)) {
+        $searchQ = trim($search_key);
 
-			$headers = array();
-			$headers[] = 'Accept: application/json';
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $ch = curl_init();
+        //$cr = "cr=" . urlencode($searchQ);
+        $cr = "";
 
-			$result = curl_exec($ch);
-			if (curl_errno($ch)) {
-			echo 'Error:' . curl_error($ch);
-			}
-			curl_close($ch);
-			$result = json_decode($result);
-			$search_result = $result->items;
-			if(is_array($search_result) && count($search_result) > 0){
-				$web_search_result_string = '';
-				foreach($search_result as $key => $single_result){
-					$result_count = $key+1;
-					$web_search_result_string .= '</br>NUMBER : '.$result_count.
-                    "</br> URL: ".$single_result->link.
-					"</br> TITLE: ".$single_result->title.
-                    "</br> CONTENT: ".$single_result->snippet.
-					"</br>";
-				}
+        $cx = "&cx=234018642682145d1";
+        //$lr = "&lr=" . urlencode($searchQ);
+        $lr = "lang_en";
+        $q = "&q=" . urlencode($searchQ);
+        $safe = "";
+        $alt = "&alt=json";
+        $num = "&num=6";
+        //$prettyPrint = "&prettyPrint=true";
+        $prettyPrint = "";
+        //$general = "&%24.xgafv=1";
+        $general = "";
+        $key = "key=AIzaSyBC28sTa4fz5DddCYc6WWfLrX_48OqgiXk";
+        curl_setopt($ch, CURLOPT_URL, 'https://customsearch.googleapis.com/customsearch/v1?' . $key . $cx . $q.$num);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
-                $search_result_string = 'I will give you a question or an instruction. Your objective is to answer my question or fulfill my instruction.';
-                $search_result_string .= "</br>";
-                $search_result_string .= 'My question or instruction is: '.$search_key ;
-                $search_result_string .= "</br>";
-                $search_result_string .= 'For your reference, today\'s date is '.date("Y-m-d H:i:s");
-                $search_result_string .= "</br>";
-                $search_result_string .= $this->inst;
-                $search_result_string .=  $web_search_result_string;
-    		}
-  		}
-        $res[0] = $web_search_result_string;
-        Log::info('search_result_string',$res);
-    	return $search_result_string;
-	}
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+
+        curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
+
+        $headers = array();
+        $headers[] = 'Accept: application/json';
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $result = curl_exec($ch);
+        if (curl_errno($ch)) {
+            echo 'Error:' . curl_error($ch);
+        }
+        curl_close($ch);
+        $result = json_decode($result);
+        $search_result = $result->items;
+        if (is_array($search_result) && count($search_result) > 0) {
+            $web_search_result_string = '';
+            foreach ($search_result as $key => $single_result) {
+                $result_count = $key + 1;
+                
+                $fetchdata = new URLFetcher($single_result->link);
+                $title =  $fetchdata->get_heading();
+                $content =  $fetchdata->get_paragraph_content();
+
+                $web_search_result_string .= '</br>NUMBER : ' . $result_count .
+                    "</br> URL: " . $single_result->link .
+                    "</br> TITLE: " . $single_result->title .
+                    "</br> CONTENT: " . $content .
+                    "</br>";
+            }
+
+            $search_result_string = 'I will give you a question or an instruction. Your objective is to answer my question or fulfill my instruction.
+';
+            $search_result_string .= "</br>";
+
+            $search_result_string .= 'My question or instruction is: ' . $search_key;
+
+            $search_result_string .= "</br>";
+
+            $search_result_string .= 'For your reference, today\'s date is ' . date("Y-m-d H:i:s");
+
+            $search_result_string .= "</br>";
+
+            $search_result_string .= $this->inst;           
+              
+ 
+
+            $search_result_string .=  $web_search_result_string;
+        }
+    }
+
+
+    $res[0] = $web_search_result_string;
+
+
+    return $search_result_string;
+}
 
     public function saveAudio(Request $request)
     {
@@ -797,4 +887,183 @@ class ChatController extends Controller
         $data['available_words_prepaid']        = auth()->user()->available_words_prepaid;
         return $data;
     }
+
+    function getWeather($jsonData){
+        Log::info("Using weather api");
+        $location = $jsonData->location;
+        $url = "http://api.weatherapi.com/v1/current.json?key=0191ce76160f4b5b9ad31403230408&&aqi=no&q=" .urlencode($location);
+        $s_response = file_get_contents($url);
+        Log::info(json_encode($s_response));
+        return ['role' => 'function','name' => 'get_current_weather', 'content' => $s_response];
+      }
+    
+      function webSearch($jsonData){
+        Log::info("Searching the web");
+        $query = $jsonData->query;
+      
+        $curl = curl_init();
+      
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => 'https://google.serper.dev/search',
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => 'CURL_HTTP_VERSION_1_1',
+          CURLOPT_CUSTOMREQUEST => 'POST',
+          CURLOPT_POSTFIELDS =>'{"q":"'.$query.'","num":5}',
+          CURLOPT_HTTPHEADER => array(
+            'X-API-KEY: 228c19b0a498a82d61554ff2801c28b4c92e0145',
+            'Content-Type: application/json'
+          ),
+        ));
+        
+        $s_response = curl_exec($curl);
+        $results = json_decode($s_response);
+        $concat_results="";
+        if(property_exists($results, 'knowledgeGraph')){
+          $concat_results= "knowledgeGraph: " . json_encode($results->knowledgeGraph) . "\n";
+        }
+        if(property_exists($results, 'answerBox')){
+          $concat_results= "answerBox : " . json_encode($results->answerBox) . "\n";
+        }
+        $concat_results .= "Organic:";
+        foreach ($results->organic as $item) {
+            $concat_results  .= ' Title: ' . $item->title . "\n";
+            $concat_results  .= ' Link: ' . $item->link . "\n";
+            $concat_results  .= ' Snippet: ' . $item->snippet . "\n\n";
+        }
+        return ['role' => 'function','name' => 'web_search', 'content' => $concat_results];
+      }
+    
+      function advanceScraping($url){
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_PROXY, 'http://4b9f58f85fc01061f99cf38a65804a4a1c3ae4fd:js_render=true&antibot=true&premium_proxy=true@proxy.zenrows.com:8001');
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        return curl_exec($ch);
+      }
+    
+      function jsRenderingScraping($url){
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_PROXY, 'http://4b9f58f85fc01061f99cf38a65804a4a1c3ae4fd:js_render=true@proxy.zenrows.com:8001');
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        return curl_exec($ch);
+      }
+    
+      function basicScraping($url){
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_PROXY, 'http://6fe25a60306000f1500cb95cc2b58d05b3fe24aa:@proxy.zenrows.com:8001');
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        return curl_exec($ch);
+      }
+    
+      function checkType($html){
+        if (substr(trim($html), 0, 1) === '<') {
+          // Probably HTML
+          return 'html';
+        } else if (in_array(substr(trim($html), 0, 1), ['{', '['], true)) {
+            // Probably JSON
+            return 'json';
+        } else {
+            // Unknown format
+            return 'unkown';
+        }
+      }
+    
+      function parseHtml($html) {
+        $dom = new \DOMDocument();
+        // Suppress HTML errors (optional)
+        libxml_use_internal_errors(true);
+    
+        // Load the HTML content into the DOMDocument
+        $dom->loadHTML($html);
+    
+        // Create a DOMXPath object to navigate the DOMDocument
+        $xpath = new \DOMXPath($dom);
+        // Remove all script tags from the DOMDocument
+    
+        if($dom->getElementsByTagName('body')->item(0)===null){
+          Log::info("no body found");
+          return [false, "no body found"];
+        }
+    
+        $scriptTags = $xpath->query('//script');
+        foreach ($scriptTags as $scriptTag) {
+            $scriptTag->parentNode->removeChild($scriptTag);
+        }
+    
+        // Remove all style tags from the DOMDocument
+        $styleTags = $xpath->query('//style');
+        foreach ($styleTags as $styleTag) {
+            $styleTag->parentNode->removeChild($styleTag);
+        }
+    
+        // Get the text content of the body
+        $textContent = $dom->getElementsByTagName('body')->item(0)->textContent;
+    
+        // Clean up whitespace and remove unrelated info
+        $lines = explode("\n", $textContent);
+        $filteredText = '';
+    
+        foreach ($lines as $line) {
+            $line = trim($line);
+    
+            // Skip empty lines and lines with just a few characters
+            if (empty($line) || strlen($line) < 10) {
+                continue;
+            }
+    
+            // Add relevant lines to the filtered text
+            // You can add additional filtering conditions based on your specific needs
+            $filteredText .= $line . "\n";
+        }
+    
+    
+        $parse_result = trim($filteredText) . "\n\n" . "Scrape Source URL: ";
+        return [true, $parse_result];
+      }
+      
+      
+      function webScrape($jsonData) {
+          $url = $jsonData->url;
+          // Create a new DOMDocument instance
+          $type = 'unkown';
+          $html = null;
+          $parse_result = null;
+      
+      
+          // Basic scraping
+          $html = basicScraping($url);
+          
+          //if json assume it is error proceed using advanced scrape
+          if(checkType($html)=='json'){
+            $html = advanceScraping($url);
+          }
+    
+          $parse_result = parseHtml($html);
+          if(!$parse_result[0]){
+            $html = jsRenderingScraping($url);
+            $parse_result = parseHtml($html);
+          }
+          
+          // Clean up whitespace and return the text content
+          return ['role' => 'function','name' => 'web_scraper', 'content' => $parse_result[1] . $url];
+      }
+      
 }

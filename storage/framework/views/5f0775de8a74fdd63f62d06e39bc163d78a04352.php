@@ -11,7 +11,7 @@
 <form id="openai-form" action="" method="post" enctype="multipart/form-data" class="mt-24"> 		
 	<?php echo csrf_field(); ?>
 	<div class="row">	
-		<div class="col-lg-4 col-md-12 col-sm-12">
+		<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12">
 			<div class="card border-0" id="template-input">
 				<div class="card-body p-5 pb-0">
 
@@ -54,9 +54,9 @@
 						<div class="col-sm-12">
 							<div class="form-group">	
 								<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('Language')); ?></h6>								
-								<select id="language" name="language" data-placeholder="<?php echo e(__('Select input language')); ?>">		
+								<select id="language" name="language" class="form-select" data-placeholder="<?php echo e(__('Select input language')); ?>">		
 									<?php $__currentLoopData = $languages; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $language): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-										<option value="<?php echo e($language->language_code); ?>" data-img="<?php echo e(URL::asset($language->language_flag)); ?>" <?php if(config('settings.default_language') == $language->language_code): ?> selected <?php endif; ?>> <?php echo e($language->language); ?></option>
+										<option value="<?php echo e($language->language_code); ?>" data-img="<?php echo e(URL::asset($language->language_flag)); ?>" <?php if(auth()->user()->default_template_language == $language->language_code): ?> selected <?php endif; ?>> <?php echo e($language->language); ?></option>
 									<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>									
 								</select>
 								<?php $__errorArgs = ['language'];
@@ -102,10 +102,10 @@ unset($__errorArgs, $__bag); ?>
 							</div>
 						<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 	
-						<div class="col-lg-6 col-md-6 col-sm-12">
+						<div class="col-lg-6 col-md-12 col-sm-12">
 							<div id="form-group">
 								<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('Creativity')); ?> <i class="ml-1 text-dark fs-12 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Increase or decrease the creativity level to get various results')); ?>"></i></h6>
-								<select id="creativity" name="creativity" data-placeholder="<?php echo e(__('Select creativity level')); ?>">
+								<select id="creativity" name="creativity" class="form-select"  data-placeholder="<?php echo e(__('Select creativity level')); ?>">
 									<option value=0 <?php if(config('settings.creativity_default_state') == 'low'): ?> selected <?php endif; ?>><?php echo e(__('Low')); ?></option>
 									<option value=0.5 <?php if(config('settings.creativity_default_state') == 'average'): ?> selected <?php endif; ?>> <?php echo e(__('Average')); ?></option>																															
 									<option value=1 <?php if(config('settings.creativity_default_state') == 'high'): ?> selected <?php endif; ?>> <?php echo e(__('High')); ?></option>																															
@@ -113,10 +113,10 @@ unset($__errorArgs, $__bag); ?>
 							</div>
 						</div>
 
-						<div class="col-lg-6 col-md-6 col-sm-12">
+						<div class="col-lg-6 col-md-12 col-sm-12">
 							<div id="form-group">
 								<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('Tone of Voice')); ?> <i class="ml-1 text-dark fs-12 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Set result tone of the text as needed')); ?>"></i></h6>
-								<select id="tone" name="tone" data-placeholder="<?php echo e(__('Select tone of voice')); ?>">
+								<select id="tone" name="tone" class="form-select"  data-placeholder="<?php echo e(__('Select tone of voice')); ?>">
 									<option value="none" <?php if(config('settings.tone_default_state') == 'none'): ?> selected <?php endif; ?>><?php echo e(__('Default')); ?></option>
 									<option value="funny" <?php if(config('settings.tone_default_state') == 'funny'): ?> selected <?php endif; ?>><?php echo e(__('Funny')); ?></option>
 									<option value="casual" <?php if(config('settings.tone_default_state') == 'casual'): ?> selected <?php endif; ?>> <?php echo e(__('Casual')); ?></option>																															
@@ -135,21 +135,34 @@ unset($__errorArgs, $__bag); ?>
 						</div>
 
 												
-						<div class="col-lg-6 col-md-6 col-sm-12">
-							<div id="form-group">
-								<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('Number of Results')); ?> <i class="ml-1 text-dark fs-12 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Maximum supported results is 5')); ?>"></i></h6>
-								<select id="max-results" name="max_results" data-placeholder="<?php echo e(__('Set max number of results')); ?>">
-									<option value=1 selected>1</option>
-									<option value=2>2</option>																															
-									<option value=3>3</option>																															
-									<option value=4>4</option>																															
-									<option value=5>5</option>																															
-								</select>
+						<div class="col-lg-6 col-md-12 col-sm-12">
+							<div class="input-box mt-5">
+								<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('Number of Results')); ?> <i class="ml-1 text-dark fs-12 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Maximum supported results is 10')); ?>"></i></h6>
+								<div class="form-group">
+									<input type="number" class="form-control <?php $__errorArgs = ['max_results'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-danger <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="max_results" name="max_results" placeholder="e.g. 5" max="10" min="1" value="1">
+									<?php $__errorArgs = ['max_results'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+										<p class="text-danger"><?php echo e($errors->first('max_results')); ?></p>
+									<?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+								</div>
 							</div>
 						</div>
 
-						<div class="col-lg-6 col-md-6 col-sm-12">								
-							<div class="input-box">								
+						<div class="col-lg-6 col-md-12 col-sm-12">								
+							<div class="input-box mt-5">								
 								<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('Max Result Length')); ?> <i class="ml-1 text-dark fs-12 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Maximum words for each generated text result')); ?>. <?php echo e(__('Maximum allowed length is ')); ?><?php echo e($limit); ?>"></i></h6>
 								<div class="form-group">							    
 									<input type="number" class="form-control <?php $__errorArgs = ['words'];
@@ -173,6 +186,7 @@ unset($__errorArgs, $__bag); ?>
 								</div> 
 							</div> 
 						</div>
+
 					</div>						
 
 					<div class="card-footer border-0 text-center p-0">						
@@ -190,7 +204,7 @@ unset($__errorArgs, $__bag); ?>
 			</div>			
 		</div>
 
-		<div class="col-lg-8 col-md-12 col-sm-12">
+		<div class="col-xl-8 col-lg-6 col-md-12 col-sm-12">
 			<div class="card border-0" id="template-output">
 				<div class="card-body">
 					<div class="row">						
@@ -220,7 +234,7 @@ unset($__errorArgs, $__bag); ?>
 						</div>
 						<div class="col-lg-4 col-md-12 col-sm-12">
 							<div class="form-group">
-								<select id="project" name="project" data-placeholder="<?php echo e(__('Select Workbook Name')); ?>">	
+								<select id="project" name="project" class="form-select" data-placeholder="<?php echo e(__('Select Workbook Name')); ?>">	
 									<option value="all"> <?php echo e(__('All Workbooks')); ?></option>
 									<?php $__currentLoopData = $workbooks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $workbook): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
 										<option value="<?php echo e($workbook->name); ?>" <?php if(strtolower(auth()->user()->workbook) == strtolower($workbook->name)): ?> selected <?php endif; ?>> <?php echo e(ucfirst($workbook->name)); ?></option>
@@ -509,7 +523,7 @@ unset($__errorArgs, $__bag); ?>
 						$('#generate').html('<?php echo e(__('Generate Text')); ?>'); 
 
 					} else {					
-						const eventSource = new EventSource( "/user/templates/original-template/process?content_id=" + data.id+"&max_results=" + data.max_results + "&max_words=" + data.max_words + "&temperature=" + data.temperature);
+						const eventSource = new EventSource( "/user/templates/original-template/process?content_id=" + data.id+"&max_results=" + data.max_results + "&max_words=" + data.max_words + "&temperature=" + data.temperature + "&language=" + data.language);
 						const response = document.getElementById('richtext');
 						let id = document.querySelector('.richText-editor').id;
 						let editor = document.getElementById(id);
@@ -539,6 +553,11 @@ unset($__errorArgs, $__bag); ?>
 						};
 						eventSource.onerror = function (e) {
 							console.log(e);
+							eventSource.close();
+							$('#generate').prop('disabled', false);
+							$('#processing', '#generate').empty().remove();
+							$('#processing').hide();
+							$('#generate').html('<?php echo e(__('Generate Text')); ?>'); 
 						};
 					}
 				},

@@ -67,6 +67,7 @@ use App\Http\Controllers\User\PromocodeController;
 use App\Http\Controllers\User\UserSupportController;
 use App\Http\Controllers\User\UserNotificationController;
 use App\Http\Controllers\User\SearchController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\User\VideoController;
 
@@ -85,6 +86,8 @@ use App\Http\Controllers\User\VideoController;
 Route::middleware(['middleware' => 'PreventBackHistory'])->group(function () {
     require __DIR__.'/auth.php';
 });
+
+Route::get('/login/facebook', 'SocialAuthController@redirectToProvider');
 
 // FRONTEND ROUTES
 Route::controller(HomeController::class)->group(function () {
@@ -500,6 +503,7 @@ Route::group(['prefix' => 'user', 'middleware' => ['verified', '2fa.verify', 'ro
         Route::get('/media-editor', 'mediaEditor')->name('user.media-editor');
         Route::get('/rss-feed', 'rssFeed')->name('user.rss-feed');
         Route::get('/agentAi', 'agentAi')->name('user.agentAi');
+        Route::post('/agentAiCreate', 'agentAiCreate')->name('user.agentAiCreate');
         Route::get('/search-feeds', 'searchFeeds')->name('user.searchFeeds');
         Route::post('/videos/search', 'index')->name('user.videos.search');
         Route::get('/videos/create', 'create')->name('user.videos.create');

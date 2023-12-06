@@ -46,9 +46,11 @@
 		#media-container iframe,
 		#media-container video {
 			width: 100%;
-			height: 100%;
+			height: 300px;
 		}
-
+    #videoModal .modalbody {
+            padding: 1rem;
+    }
 		/** End Dev. Slider CSS **/
 
 	</style>
@@ -93,7 +95,7 @@
 				</div>
 				<!-- Bootstrap modal structure -->
 				<div class="modal fade" id="videoModal" tabindex="-1" role="dialog" aria-labelledby="videoModalLabel" aria-hidden="true">
-					<div class="modal-dialog modal-lg" role="document">
+					<div class="modal-dialog modal-xs modal-dialog-centered" role="document">
 						<div class="modal-content">
 							<div class="modal-body">
 								<div id="media-container"></div>

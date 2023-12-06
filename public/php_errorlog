@@ -13,3 +13,6 @@
 [13-Sep-2023 09:24:50 America/New_York] "This model's maximum context length is 4097 tokens. However, your messages resulted in 5344 tokens. Please reduce the length of the messages."
 [25-Sep-2023 01:30:57 America/New_York] "This model's maximum context length is 4097 tokens. However, your messages resulted in 4610 tokens. Please reduce the length of the messages."
 [25-Sep-2023 01:40:28 America/New_York] "This model's maximum context length is 4097 tokens. However, your messages resulted in 4620 tokens. Please reduce the length of the messages."
+[24-Oct-2023 06:46:49 America/New_York] PHP Fatal error:  Allowed memory size of 268435456 bytes exhausted (tried to allocate 262144 bytes) in /home/customer/www/staging.paraclete.ai/public_html/vendor/laravel/framework/src/Illuminate/View/Concerns/ManagesLayouts.php on line 102
+[24-Oct-2023 06:48:49 America/New_York] PHP Fatal error:  Allowed memory size of 268435456 bytes exhausted (tried to allocate 262144 bytes) in /home/customer/www/staging.paraclete.ai/public_html/vendor/laravel/framework/src/Illuminate/View/Concerns/ManagesLayouts.php on line 102
+[21-Nov-2023 19:42:05 America/New_York] "Internal server error"

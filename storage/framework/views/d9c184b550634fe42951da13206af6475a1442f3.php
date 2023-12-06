@@ -123,7 +123,9 @@ unset($__errorArgs, $__bag); ?>
                         <?php endif; ?>                         
                                                
                     </div>
-
+                    
+                    <a href="<?php echo e(url('/login/facebook')); ?>">Login with Facebook</a>
+                    
                     <p class="fs-10 text-muted pt-3"><?php echo e(__('By continuing, you agree to our')); ?> <a href="<?php echo e(route('terms')); ?>" class="text-info"><?php echo e(__('Terms and Conditions')); ?></a> <?php echo e(__('and')); ?> <a href="<?php echo e(route('privacy')); ?>" class="text-info"><?php echo e(__('Privacy Policy')); ?></a></p>
 
                 </form>

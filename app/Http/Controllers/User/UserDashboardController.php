@@ -12,6 +12,7 @@ use App\Models\Template;
 use App\Models\SubscriptionPlan;
 use App\Models\Chat;
 use App\Models\FavoriteChat;
+use App\Models\Banner;
 
 class UserDashboardController extends Controller
 {
@@ -50,7 +51,9 @@ class UserDashboardController extends Controller
         $plan = (auth()->user()->plan_id) ? SubscriptionPlan::where('id', auth()->user()->plan_id)->first() : '';
         $subscription = ($plan) ? $plan->plan_name : ''; 
 
-        return view('user.dashboard.index', compact('data', 'chart_data', 'template_quantity', 'templates', 'subscription', 'custom_templates', 'chat_quantity', 'favorite_chats'));           
+        $BannerModel = Banner::get()->toArray();
+
+        return view('user.dashboard.index', compact('BannerModel','data', 'chart_data', 'template_quantity', 'templates', 'subscription', 'custom_templates', 'chat_quantity', 'favorite_chats'));           
     }
 
 

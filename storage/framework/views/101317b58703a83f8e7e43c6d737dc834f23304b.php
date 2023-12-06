@@ -1,8 +1,57 @@
-
-
 <?php $__env->startSection('css'); ?>
 	<!-- Sweet Alert CSS -->
 	<link href="<?php echo e(URL::asset('plugins/sweetalert/sweetalert2.min.css')); ?>" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+
+	<style>
+
+		.slide-arrow{
+		position: absolute;
+		top: 50%;
+		margin-top: -15px;
+		}
+		.prev-arrow{
+		left: -30px;
+		width: 0;
+		height: 0;
+		border-left: 0 solid transparent;
+		border-right: 15px solid #113463;
+		border-top: 10px solid transparent;
+		border-bottom: 10px solid transparent;
+		background: none;
+		}
+		.next-arrow{
+		right: -30px;
+		width: 0;
+		height: 0;
+		border-right: 0 solid transparent;
+		border-left: 15px solid #113463;
+		border-top: 10px solid transparent;
+		border-bottom: 10px solid transparent;
+		background: none;
+		}
+
+		/** Dev. Slider CSS **/
+
+		.slick-slide img {
+			display: block;
+			height: auto;
+			width: 100%;
+		}  
+
+		/* Styles for the media controller */
+
+		#media-container iframe,
+		#media-container video {
+			width: 100%;
+			height: 300px;
+		}
+    #videoModal .modalbody {
+            padding: 1rem;
+    }
+		/** End Dev. Slider CSS **/
+
+	</style>
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('page-header'); ?>
@@ -26,38 +75,65 @@
 		<div class="col-lg-12 col-md-12">
 			<div class="card border-0">
 				<div class="card-body pt-5 pb-5">
-					<div class="row mb-6" id="user-dashboard-background">
-						<div class="col-lg-4 col-md-4 col-sm-12">
-							<h4 class="mb-2 mt-2 font-weight-800 fs-24"><?php echo e(__('Welcome')); ?>, <?php echo e(auth()->user()->name); ?></h4>
-							<?php if(is_null(auth()->user()->plan_id)): ?>
-								<h6 class="fs-12"><?php echo e(__('Your account is currently part of our')); ?> <span class=" fs-10 btn btn-cancel-black user-dashboard-button ml-2 pl-5 pr-5"><i class="fa-sharp fa-solid fa-gift text-yellow mr-2"></i><?php echo e(__('Free Trial Plan')); ?></span></h6>
-								<h6 class="fs-12"><?php echo e(__('Subscribe to one of our plans to get access to all features and benefits')); ?></h6>
-								<a href="<?php echo e(route('user.plans')); ?>" class="btn btn-primary yellow mt-2"><i class="fa-solid fa-box-check mr-2"></i><?php echo e(__('Upgrade Now')); ?></a>
-							<?php else: ?>
-								<h6 class="fs-12"><?php echo e(__('You are currently subscribed to our')); ?> <span class=" fs-10 btn btn-primary yellow pl-5 ml-2 pr-5"><i class="fa-sharp fa-solid fa-gem mr-2"></i><?php echo e($subscription); ?> <?php echo e(__('Plan')); ?></span></h6>
-							<?php endif; ?>
-						</div>
-						<div class="col-lg-8 col-md-8 col-sm-12">
-							<div class="row text-center">
-								<div class="col-lg-3 col-md-6 col-sm-6">
-									<h6 class="fs-12 mt-3 font-weight-bold"><?php echo e(__('Words Left')); ?></h6>
-									<h4 class="mb-3 font-weight-800 text-primary fs-20"><?php echo e(number_format(auth()->user()->available_words + auth()->user()->available_words_prepaid)); ?></h4>										
-								</div>
-								<div class="col-lg-3 col-md-6 col-sm-6">
-									<h6 class="fs-12 mt-3 font-weight-bold"><?php echo e(__('Images Left')); ?></h6>
-									<h4 class="mb-3 font-weight-800 text-primary fs-20"><?php echo e(number_format(auth()->user()->available_images + auth()->user()->available_images_prepaid)); ?></h4>										
-								</div>						
-								<div class="col-lg-3 col-md-6 col-sm-6">
-									<h6 class="fs-12 mt-3 font-weight-bold"><?php echo e(__('Characters Left')); ?></h6>
-									<h4 class="mb-3 font-weight-800 text-primary fs-20"><?php echo e(number_format(auth()->user()->available_chars + auth()->user()->available_chars_prepaid)); ?></h4>										
-								</div>
-								<div class="col-lg-3 col-md-6 col-sm-6">
-									<h6 class="fs-12 mt-3 font-weight-bold"><?php echo e(__('Minutes Left')); ?></h6>
-									<h4 class="mb-3 font-weight-800 text-primary fs-20"><?php echo e(number_format(auth()->user()->available_minutes + auth()->user()->available_minutes_prepaid)); ?></h4>										
+					<div class="col-lg-12 col-md-12">
+						<div class="card border-0">
+							<div class="card-body pt-5 pb-5">
+								<div class="slider lazy">
+									<?php $__currentLoopData = $BannerModel; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+										<div>
+											<div class="image">
+												<img data-lazy="<?php echo e(asset('banner/'.$value['image'])); ?>" data-type="<?php echo e($value['type']); ?>" data-url="<?php echo e($value['url']); ?>" />
+											</div>
+										</div>
+									<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 								</div>
 							</div>
 						</div>
 					</div>
+				</div>
+				<!-- Bootstrap modal structure -->
+				<div class="modal fade" id="videoModal" tabindex="-1" role="dialog" aria-labelledby="videoModalLabel" aria-hidden="true">
+					<div class="modal-dialog modal-xs modal-dialog-centered" role="document">
+						<div class="modal-content">
+							<div class="modal-body">
+								<div id="media-container"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row mb-6" id="user-dashboard-background">
+					<div class="col-lg-4 col-md-4 col-sm-12">
+						<h4 class="mb-2 mt-2 font-weight-800 fs-24"><?php echo e(__('Welcome')); ?>, <?php echo e(auth()->user()->name); ?></h4>
+						<?php if(is_null(auth()->user()->plan_id)): ?>
+							<h6 class="fs-12"><?php echo e(__('Your account is currently part of our')); ?> <span class=" fs-10 btn btn-cancel-black user-dashboard-button ml-2 pl-5 pr-5"><i class="fa-sharp fa-solid fa-gift text-yellow mr-2"></i><?php echo e(__('Free Trial Plan')); ?></span></h6>
+							<h6 class="fs-12"><?php echo e(__('Subscribe to one of our plans to get access to all features and benefits')); ?></h6>
+							<a href="<?php echo e(route('user.plans')); ?>" class="btn btn-primary yellow mt-2"><i class="fa-solid fa-box-check mr-2"></i><?php echo e(__('Upgrade Now')); ?></a>
+						<?php else: ?>
+							<h6 class="fs-12"><?php echo e(__('You are currently subscribed to our')); ?> <span class=" fs-10 btn btn-primary yellow pl-5 ml-2 pr-5"><i class="fa-sharp fa-solid fa-gem mr-2"></i><?php echo e($subscription); ?> <?php echo e(__('Plan')); ?></span></h6>
+						<?php endif; ?>
+					</div>
+					<div class="col-lg-8 col-md-8 col-sm-12">
+						<div class="row text-center">
+							<div class="col-lg-3 col-md-6 col-sm-6">
+								<h6 class="fs-12 mt-3 font-weight-bold"><?php echo e(__('Words Left')); ?></h6>
+								<h4 class="mb-3 font-weight-800 text-primary fs-20"><?php echo e(number_format(auth()->user()->available_words + auth()->user()->available_words_prepaid)); ?></h4>										
+							</div>
+							<div class="col-lg-3 col-md-6 col-sm-6">
+								<h6 class="fs-12 mt-3 font-weight-bold"><?php echo e(__('Images Left')); ?></h6>
+								<h4 class="mb-3 font-weight-800 text-primary fs-20"><?php echo e(number_format(auth()->user()->available_images + auth()->user()->available_images_prepaid)); ?></h4>										
+							</div>						
+							<div class="col-lg-3 col-md-6 col-sm-6">
+								<h6 class="fs-12 mt-3 font-weight-bold"><?php echo e(__('Characters Left')); ?></h6>
+								<h4 class="mb-3 font-weight-800 text-primary fs-20"><?php echo e(number_format(auth()->user()->available_chars + auth()->user()->available_chars_prepaid)); ?></h4>										
+							</div>
+							<div class="col-lg-3 col-md-6 col-sm-6">
+								<h6 class="fs-12 mt-3 font-weight-bold"><?php echo e(__('Minutes Left')); ?></h6>
+								<h4 class="mb-3 font-weight-800 text-primary fs-20"><?php echo e(number_format(auth()->user()->available_minutes + auth()->user()->available_minutes_prepaid)); ?></h4>										
+							</div>
+						</div>
+					</div>
+				</div>
 					
 					<div class="row">
 						<div class="col-lg-2 col-md-4 col-sm-12">
@@ -142,14 +218,7 @@
 				</div>
 			</div>
 		</div>
-
-		<div class="col-lg-12 col-md-12">
-			<div class="card border-0">
-				<div class="card-body pt-5 pb-5">
-						<p> Paraclete's Daily Viral Inspiration </p>
-				</div>
-			</div>
-		</div>		
+	
 		<div class="col-lg-6 col-md-12 col-sm-12 mt-5">
 			<div class="card border-0" id="user-dashboard-panels">
 				<div class="card-header pt-4 pb-4 border-0">
@@ -315,13 +384,16 @@
 	<!-- Chart JS -->
 	<script src="<?php echo e(URL::asset('plugins/chart/chart.min.js')); ?>"></script>
 	<script src="<?php echo e(URL::asset('plugins/sweetalert/sweetalert2.all.min.js')); ?>"></script>
+	<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+
+
 	<script>
 		$(function() {
 	
 			'use strict';
 
 			// Total New User Analysis Chart
-			var userMonthlyData = JSON.parse(`<?php echo $chart_data['user_monthly_usage']; ?>`);
+			var userMonthlyData = JSON.parse('<?php echo $chart_data['user_monthly_usage']; ?>');
 			var userMonthlyDataset = Object.values(userMonthlyData);
 			var ctx = document.getElementById('chart-monthly-usage');
 			let delayed1;
@@ -540,6 +612,46 @@
 				}
 			})
 		}
+
+		$('.lazy').slick({
+			lazyLoad: 'ondemand',
+			// slidesToShow: 3,
+			slidesToScroll: 1,
+			prevArrow: '<button class="slide-arrow prev-arrow"></button>',
+			nextArrow: '<button class="slide-arrow next-arrow"></button>',
+			autoplay: true,
+    		autoplaySpeed: 3000, 
+		});
+	
+		$('.slider').on('click', '.image img', function () {
+			var bannerType = $(this).data('type');
+			var bannerUrl = $(this).data('url');
+
+			if (bannerType === 'video') {
+				if (isYouTubeUrl(bannerUrl)) {
+					$('#media-container').html('<iframe width="560" height="450" src="' + convertToEmbeddedUrl(bannerUrl) + '" frameborder="0" allowfullscreen></iframe>');
+				} else {
+					$('#media-container').html('<video width="560" height="450" controls autoplay><source src="' + bannerUrl + '" type="video/mp4"></video>');
+				}
+
+				$('#videoModal').modal('show');
+			} else if (bannerType === 'website') {
+				window.open(bannerUrl, '_blank');
+			}
+		});
+
+        function isYouTubeUrl(url) {
+            return url.includes('youtube.com') || url.includes('youtu.be');
+        }
+
+        function convertToEmbeddedUrl(url) {
+            var videoId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\d\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            if (videoId && videoId[1]) {
+                return 'https://www.youtube.com/embed/' + videoId[1];
+            } else {
+                return url;
+            }
+        }
 
 	</script>
 <?php $__env->stopSection(); ?>

@@ -402,60 +402,6 @@
 			});
 	});
 
-	function loadChat(active_id)
-    {
-        $.ajax({
-				headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-				method: 'POST',
-				url: '/user/chat/messages',
-				data: { 'code': active_id,},
-				success: function (data) {
-					$('#chat-container').html('');
-
-					let messages = document.querySelectorAll('.chat-sidebar-message').length;
-					if (messages >= 1) {
-						let json = isJson(data)
-						if (json) {
-							let result = JSON.parse(data);
-							if (result['chat']) {
-								let chat = result['chat'];
-
-								for(const key in chat) {
-									if (chat[key]['role'] == 'user') {
-										appendMessage(user_avatar, "right", chat[key]['content']);
-									} else if (chat[key]['role'] == 'assistant') {
-										appendMessage(bot_avatar, "left", chat[key]['content']);
-									}
-								}
-							}
-						}
-					} else {
-						let id = makeid(10);
-						$('#chat-container').html('');
-
-						$('.chat-sidebar-messages').prepend(`<div class="chat-sidebar-message selected-message" id=${id}>
-								<div class="chat-title" id="title-${id}">
-									{{ __('New Chat') }}
-								</div>
-								<div class="chat-info">
-									<div class="chat-count"><span>0</span> {{ __('messages') }}</div>
-									<div class="chat-date">{{ __('Now') }}</div>
-								</div>
-								<div class="chat-actions d-flex">
-									<a href="#" class="chat-edit id=${id} fs-12"><i class="fa-sharp fa-solid fa-pen-to-square" data-tippy-content="{{ __('Edit Name') }}"></i></a>
-									<a href="#" class="chat-delete  id=${id} fs-12 ml-2"><i class="fa-sharp fa-solid fa-trash" data-tippy-content="{{ __('Delete Chat') }}"></i></a>
-								</div>
-							</div>`);
-						active_id = id;
-					}
-								
-				},
-				error: function(data) {
-					toastr.warning('{{ __('There was an issue while retrieving chat history') }}');
-				}
-			});
-    }
-	
 	// Create new chat message box
 	$("#new-chat-button").on('click', function (e) {
         e.preventDefault();
@@ -534,9 +480,10 @@
 			})	
 			.then(data => {
 				
-				const eventSource = new EventSource("/user/chat/generate?message_code=" + active_id);				
+				const eventSource = new EventSource("/user/chat/generate?message="+message, {withCredentials: true});				
 				const response = document.getElementById(code);
 				const chatbubble = document.getElementById('chat-bubble-' + code);
+				let responseStarted = false;
 				
 				eventSource.onopen = function(e) {
 					response.innerHTML = '';
@@ -545,9 +492,11 @@
 				eventSource.onmessage = function (e) {
 
 					if (e.data == "[DONE]") {
-                        loadChat(active_id);
+                        
 						msgerSendBtn.disabled = false
 						eventSource.close();
+						loadChat(active_id);
+
                         if( $('#isAudioSearch').val() == '1'){
 							fetch("/user/chat/audio-convert", { 
 								headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
@@ -563,19 +512,19 @@
 							})
                         }
                         fetch("/user/chat/update-words", { 
-								headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
-								method: 'post',
-								 body: formData
-							 })
-                            .then(function(response){
-								return response.text();
+							headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
+							method: 'post',
+								body: formData
 							})
-							.then(function(result){
-								const parsedResult = JSON.parse(result);
-                                $("#balance").text(parsedResult.balance);
-                                $("#available_words").text(parsedResult.available_words);
-                                $("#available_words_prepaid").text(parsedResult.available_words_prepaid);
-						    })
+						.then(function(response){
+							return response.text();
+						})
+						.then(function(result){
+							const parsedResult = JSON.parse(result);
+							$("#balance").text(parsedResult.balance);
+							$("#available_words").text(parsedResult.available_words);
+							$("#available_words_prepaid").text(parsedResult.available_words_prepaid);
+						})
                     } else {
 						let txt = JSON.parse(e.data).choices[0].delta.content
 						if (txt !== undefined) {
@@ -821,7 +770,7 @@
 	}
 
 	// Display chat messages (bot and user)
-	function appendMessage(img, side, text, code) {
+	function appendMessage(img, side, text, code , insertBefore) {
 		let msgHTML;
 		text = nl2br(text);
 
@@ -845,7 +794,13 @@
 			</div>`;
 		}
 
-		msgerChat.insertAdjacentHTML("beforeend", msgHTML);
+		if (insertBefore) {
+				let secondToLastChild = msgerChat.lastElementChild.previousElementSibling;
+				secondToLastChild.insertAdjacentHTML("afterend", msgHTML);
+		}else{
+			msgerChat.insertAdjacentHTML("beforeend", msgHTML);
+		}
+
 		msgerChat.scrollTop += 500;
 	}
 

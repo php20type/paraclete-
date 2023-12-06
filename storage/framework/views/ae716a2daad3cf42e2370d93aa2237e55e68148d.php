@@ -14,7 +14,7 @@
             <span class="side-menu__label"><?php echo e(__('Dashboard')); ?></span></a>
         </li> 
         <li class="slide">
-            <a class="side-menu__item" href="<?php echo e(route('user.templates')); ?>">
+            <a class="side-menu__item"  href="<?php echo e(route('user.templates')); ?>">
             <span class="side-menu__icon lead-3 fs-18 fa-solid fa-microchip-ai"></span>
             <span class="side-menu__label"><?php echo e(__('Templates')); ?></span></a>
         </li> 
@@ -85,7 +85,7 @@
                 </li> 
             <?php endif; ?>
         <?php endif; ?>
-        <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'admin')): ?>
+      <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'admin')): ?>
             <li class="slide">
                 <a class="side-menu__item" href="<?php echo e(route('user.transcribe')); ?>">
                 <span class="side-menu__icon fa-sharp fa-solid fa-folder-music"></span>
@@ -140,6 +140,22 @@
                 <span class="side-menu__label"><?php echo e(__('AI Chat Staff')); ?></span></a>
             </li>
         <?php endif; ?> 
+        <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'admin')): ?>
+            <li class="slide mb-3">
+                <a class="side-menu__item" href="<?php echo e(route('smart.ads')); ?>">
+                <span class="side-menu__icon lead-3 fa-solid fa-rectangle-ad"></span>
+                <span class="side-menu__label"><?php echo e(__('Smart Ads')); ?></span></a>
+            </li>
+        <?php endif; ?> 
+        <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'user|subscriber')): ?>
+            <?php if(config('settings.chat_feature_user') == 'allow'): ?>
+                <li class="slide mb-3">
+                    <a class="side-menu__item" href="<?php echo e(route('smart.ads')); ?>">
+                    <span class="side-menu__icon lead-3 fa-solid fa-rectangle-ad"></span>
+                    <span class="side-menu__label"><?php echo e(__('Smart Ads')); ?></span></a>
+                </li> 
+            <?php endif; ?>
+        <?php endif; ?>
         <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'user|subscriber')): ?>
             <?php if(config('settings.video_feature_user') == 'allow'): ?>
                 <li class="slide mb-3">
@@ -155,7 +171,58 @@
                 <span class="side-menu__icon fa-solid fa-circle-video"></span>
                 <span class="side-menu__label"><?php echo e(__('Training Videos')); ?></span></a>
             </li>
-        <?php endif; ?>     
+        <?php endif; ?>
+        <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'user|subscriber')): ?>
+            
+                <li class="slide mb-3">
+                    <a class="side-menu__item" href="<?php echo e(route('user.media-editor')); ?>">
+                    <span class="side-menu__icon fa-solid fas fa-edit"></span>
+                    <span class="side-menu__label"><?php echo e(__('Media Editor')); ?></span></a>
+                </li> 
+           
+        <?php endif; ?>
+        <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'admin')): ?>
+            <li class="slide mb-3">
+             <a class="side-menu__item" href="<?php echo e(route('user.media-editor')); ?>">
+                <span class="side-menu__icon fa-solid fas fa-edit"></span>
+                <span class="side-menu__label"><?php echo e(__('Media Editor')); ?></span></a>
+            </li>
+        <?php endif; ?>          
+
+        <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'user|subscriber')): ?>
+            
+                <li class="slide mb-3">
+                    <a class="side-menu__item" href="<?php echo e(route('user.rss-feed')); ?>">
+                    <span class="side-menu__icon fa-solid fa fa-rsst"></span>
+                    <span class="side-menu__label"><?php echo e(__('Viral Feed')); ?></span></a>
+                </li> 
+           
+        <?php endif; ?>
+        <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'admin')): ?>
+            <li class="slide mb-3">
+             <a class="side-menu__item" href="<?php echo e(route('user.rss-feed')); ?>">
+                <span class="side-menu__icon fa-solid fa fa-rss"></span>
+                <span class="side-menu__label"><?php echo e(__('Viral Feed')); ?></span></a>
+            </li>
+        <?php endif; ?>       
+
+         <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'user|subscriber')): ?>
+            
+                <li class="slide mb-3">
+                    <a class="side-menu__item" href="<?php echo e(route('user.agentAi')); ?>">
+                    <span class="side-menu__icon fa-solid fa  fa-user-secret"></span>
+                    <span class="side-menu__label"><?php echo e(__('Agentic AI')); ?></span></a>
+                </li> 
+           
+        <?php endif; ?>
+        <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'admin')): ?>
+            <li class="slide mb-3">
+             <a class="side-menu__item" href="<?php echo e(route('user.agentAi')); ?>">
+                <span class="side-menu__icon fa-solid fa-user-secret"></span>
+                <span class="side-menu__label"><?php echo e(__('Agentic AI')); ?></span></a>
+            </li>
+        <?php endif; ?>          
+
 
         <hr class="w-90 text-center m-auto">
         <li class="side-item side-item-category mt-4 mb-3"><?php echo e(__('Account')); ?></li>
@@ -205,6 +272,7 @@
                         <li><a href="<?php echo e(route('admin.davinci.voices')); ?>" class="slide-item"><?php echo e(__('Voices Customization')); ?></a></li>
                         <li><a href="<?php echo e(route('admin.davinci.chats')); ?>" class="slide-item"><?php echo e(__('AI Chats Customization')); ?></a></li>
                         <li><a href="<?php echo e(route('admin.davinci.configs')); ?>" class="slide-item"><?php echo e(__('Davinci Settings')); ?></a></li>
+                        <li><a href="<?php echo e(route('admin.davinci.banner')); ?>" class="slide-item"><?php echo e(__('Banner')); ?></a></li>
                     </ul>
             </li>
             <li class="slide">
@@ -327,4 +395,6 @@
         </div>
     </ul>
 </aside>
-<!-- END SIDE MENU BAR --><?php /**PATH /home/customer/www/staging.paraclete.ai/public_html/resources/views/layouts/nav-aside.blade.php ENDPATH**/ ?>
+
+
+<?php /**PATH /home/customer/www/staging.paraclete.ai/public_html/resources/views/layouts/nav-aside.blade.php ENDPATH**/ ?>
