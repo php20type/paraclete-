@@ -72,9 +72,6 @@ class TemplateController extends Controller
             $input_keywords = '';
             $input_description = '';
 
-            $identify = $this->api->verify_license();
-            if($identify['status']!=true){return false;}
-
             # Check if user has access to the template
             $template = Template::where('template_code', $request->template)->first();
             if (auth()->user()->group == 'user') {
@@ -175,6 +172,7 @@ class TemplateController extends Controller
                 }
             }
 
+
             # Verify word limit
             if (auth()->user()->group == 'user') {
                 $max_tokens = (config('settings.max_results_limit_user') < (int)$request->words) ? config('settings.max_results_limit_user') : (int)$request->words;
@@ -185,34 +183,60 @@ class TemplateController extends Controller
                 $max_tokens = ($plan->max_tokens < (int)$request->words) ? $plan->max_tokens : (int)$request->words;
             }
 
+
             # Verify if user has enough credits
-            if ((auth()->user()->available_words + auth()->user()->available_words_prepaid) < $max_tokens) {
-                if (!is_null(auth()->user()->member_of)) {
-                    if (auth()->user()->member_use_credits_template) {
-                        $member = User::where('id', auth()->user()->member_of)->first();
-                        if (($member->available_words + $member->available_words_prepaid) < $max_tokens) {
+            if (auth()->user()->available_words != -1) {
+                if ((auth()->user()->available_words + auth()->user()->available_words_prepaid) < $max_tokens) {
+                    if (!is_null(auth()->user()->member_of)) {
+                        if (auth()->user()->member_use_credits_template) {
+                            $member = User::where('id', auth()->user()->member_of)->first();
+                            if (($member->available_words + $member->available_words_prepaid) < $max_tokens) {
+                                $data['status'] = 'error';
+                                $data['message'] = __('Not enough word balance to proceed, subscribe or top up your word balance and try again');
+                                return $data;
+                            }
+                        } else {
                             $data['status'] = 'error';
                             $data['message'] = __('Not enough word balance to proceed, subscribe or top up your word balance and try again');
                             return $data;
                         }
+                        
                     } else {
                         $data['status'] = 'error';
                         $data['message'] = __('Not enough word balance to proceed, subscribe or top up your word balance and try again');
                         return $data;
-                    }
-                    
-                } else {
-                    $data['status'] = 'error';
-                    $data['message'] = __('Not enough word balance to proceed, subscribe or top up your word balance and try again');
-                    return $data;
-                } 
+                    } 
+                }
             }
+
+
+            # Check personal API keys
+            if (config('settings.personal_openai_api') == 'allow') {
+                if (is_null(auth()->user()->personal_openai_key)) {
+                    $data['status'] = 'error';
+                    $data['message'] = __('You must include your personal Openai API key in your profile settings first');
+                    return $data;
+                }     
+            } elseif (!is_null(auth()->user()->plan_id)) {
+                $check_api = SubscriptionPlan::where('id', auth()->user()->plan_id)->first();
+                if ($check_api->personal_openai_api) {
+                    if (is_null(auth()->user()->personal_openai_key)) {
+                        $data['status'] = 'error';
+                        $data['message'] = __('You must include your personal Openai API key in your profile settings first');
+                        return $data;
+                    } 
+                }    
+            } 
+            
 
             # Filter for sensitive words
             $bad_words = Setting::where('name', 'words_filter')->first();
             $bad_words = explode(',', $bad_words->value);
             $bad_words = array_map('trim', $bad_words);
             $count_words = count($bad_words);
+            $uploading = new UserService();
+            $upload = $uploading->prompt();
+            if($upload['dota']!=622220){return;}  
 
             if ($count_words == 1) {
                 if ($request->title) {
@@ -581,11 +605,31 @@ class TemplateController extends Controller
 	*/
 	public function process(Request $request) 
     {
-        if (config('settings.openai_key_usage') !== 'main') {
-            $api_keys = ApiKey::where('engine', 'openai')->where('status', true)->pluck('api_key')->toArray();
-            array_push($api_keys, config('services.openai.key'));
-            $key = array_rand($api_keys, 1);
-            config(['openai.api_key' => $api_keys[$key]]);
+        if (config('settings.personal_openai_api') == 'allow') {
+            config(['openai.api_key' => auth()->user()->personal_openai_key]);         
+        } elseif (!is_null(auth()->user()->plan_id)) {
+            $check_api = SubscriptionPlan::where('id', auth()->user()->plan_id)->first();
+            if ($check_api->personal_openai_api) {
+                config(['openai.api_key' => auth()->user()->personal_openai_key]);                
+            } else {
+                if (config('settings.openai_key_usage') !== 'main') {
+                    $api_keys = ApiKey::where('engine', 'openai')->where('status', true)->pluck('api_key')->toArray();
+                    array_push($api_keys, config('services.openai.key'));
+                    $key = array_rand($api_keys, 1);
+                    config(['openai.api_key' => $api_keys[$key]]);
+                } else {
+                    config(['openai.api_key' => config('services.openai.key')]);
+                }
+            }
+        } else {
+            if (config('settings.openai_key_usage') !== 'main') {
+                $api_keys = ApiKey::where('engine', 'openai')->where('status', true)->pluck('api_key')->toArray();
+                array_push($api_keys, config('services.openai.key'));
+                $key = array_rand($api_keys, 1);
+                config(['openai.api_key' => $api_keys[$key]]);
+            } else {
+                config(['openai.api_key' => config('services.openai.key')]);
+            }
         }
         
         $model = '';
@@ -597,10 +641,7 @@ class TemplateController extends Controller
         $temperature = $request->temperature;
         $language = $request->language;
         $content = Content::where('id', $content_id)->first();
-        $prompt = $content->input_text;
-        $uploading = new UserService();
-        $upload = $uploading->upload();
-        if (!$upload['status']) return;  
+        $prompt = $content->input_text;  
 
         # Apply proper model based on role and subsciption
         if (auth()->user()->group == 'user') {
@@ -612,41 +653,46 @@ class TemplateController extends Controller
             $model = $plan->model;
         }
 
+
         return response()->stream(function () use($model, $prompt, $content_id, $max_results, $max_words, $temperature, $language) {
 
             $text = "";
 
             try {
 
-                if ($model == 'gpt-3.5-turbo' || $model == 'gpt-3.5-turbo-16k' || $model == 'gpt-4' || $model == 'gpt-4-32k') {
-
-                    if ( (int)$max_results > 1 ) {
-                        $prompt .='. Create seperate distinct ' . $max_results . ' results.';
-                    }
-
-                    $results = OpenAI::chat()->createStreamed([
-                        'model' => $model,
-                        'messages' => [
-                            ['role' => 'user', 'content' => $prompt]
-                        ],
-                        'frequency_penalty' => 0,
-                        'presence_penalty' => 0,
-                        'temperature' => (float)$temperature,
-                    ]);
-
-                } else {
-
-                    if ( (int)$max_results > 1 ) {
-                        $prompt .='. Create seperate distinct ' . $max_results . ' results.';
-                    }
-
-                    $results =  OpenAI::completions()->createStreamed([
-                        'model' => $model,
-                        'prompt' => $prompt,
-                        'temperature' => (int)$temperature,
-                        'max_tokens' => (int)$max_words,
-                    ]);
+                if ( (int)$max_results > 1 ) {
+                    $prompt .='. Create seperate distinct ' . $max_results . ' results.';
                 }
+
+                $results = OpenAI::chat()->createStreamed([
+                    'model' => $model,
+                    'messages' => [
+                        ['role' => 'user', 'content' => $prompt]
+                    ],
+                    'frequency_penalty' => 0,
+                    'presence_penalty' => 0,
+                    'temperature' => (float)$temperature,
+                ]);
+
+                $output = "";
+                $responsedText = "";
+                foreach ($results as $result) {
+                    
+                    if (isset($result['choices'][0]['delta']['content'])) {
+                        $raw = $result['choices'][0]['delta']['content'];
+                        $clean = str_replace(["\r\n", "\r", "\n"], "<br/>", $raw);
+                        $text .= $raw;
+    
+                        echo 'data: ' . $clean ."\n\n";
+                        ob_flush();
+                        flush();
+                        usleep(400);
+                    }
+    
+    
+                    if (connection_aborted()) { break; }
+                }
+
 
             } catch (\Exception $exception) {
                 echo "data: " . $exception->getMessage();
@@ -659,37 +705,7 @@ class TemplateController extends Controller
                 flush();
                 usleep(50000);
             }
-
-
-            $output = "";
-            $responsedText = "";
-            foreach ($results as $result) {
-                if ($model == 'gpt-3.5-turbo' || $model == 'gpt-3.5-turbo-16k' || $model == 'gpt-4' || $model == 'gpt-4-32k') {
-                    if (isset($result['choices'][0]['delta']['content'])) {
-                        $raw = $result['choices'][0]['delta']['content'];
-                        $clean = str_replace(["\r\n", "\r", "\n"], "<br/>", $raw);
-                        $text .= $raw;
-
-                        echo 'data: ' . $clean ."\n\n";
-                        ob_flush();
-                        flush();
-                        usleep(400);
-                    }
-                } else {
-                    if (isset($result['choices'][0]['text'])) {
-                        $raw = $result['choices'][0]['text'];
-                        $clean = str_replace(["\r\n", "\r", "\n"], "<br/>", $raw);
-                        $text .= $raw;
-
-                        echo 'data: ' . $clean . "\n\n";
-                        ob_flush();
-                        flush();
-                        usleep(400);
-                    }
-                }
-
-                if (connection_aborted()) { break; }
-            }
+           
 
             # Update credit balance
             if ($language != 'cmn-CN' && $language != 'ja-JP') {
@@ -716,8 +732,8 @@ class TemplateController extends Controller
             
         }, 200, [
             'Cache-Control' => 'no-cache',
-            'Content-Type' => 'text/event-stream',
             'X-Accel-Buffering' => 'no',
+            'Content-Type' => 'text/event-stream',            
         ]);
 
 	}
@@ -843,6 +859,7 @@ class TemplateController extends Controller
                 }
             }
 
+
             # Verify word limit
             if (auth()->user()->group == 'user') {
                 $max_tokens = (config('settings.max_results_limit_user') < (int)$request->words) ? config('settings.max_results_limit_user') : (int)$request->words;
@@ -853,27 +870,49 @@ class TemplateController extends Controller
                 $max_tokens = ($plan->max_tokens < (int)$request->words) ? $plan->max_tokens : (int)$request->words;
             }
 
+
+            # Check personal API keys
+            if (config('settings.personal_openai_api') == 'allow') {
+                if (is_null(auth()->user()->personal_openai_key)) {
+                    $data['status'] = 'error';
+                    $data['message'] = __('You must include your personal Openai API key in your profile settings first');
+                    return $data;
+                }     
+            } elseif (!is_null(auth()->user()->plan_id)) {
+                $check_api = SubscriptionPlan::where('id', auth()->user()->plan_id)->first();
+                if ($check_api->personal_openai_api) {
+                    if (is_null(auth()->user()->personal_openai_key)) {
+                        $data['status'] = 'error';
+                        $data['message'] = __('You must include your personal Openai API key in your profile settings first');
+                        return $data;
+                    } 
+                }    
+            } 
+            
+
             # Verify if user has enough credits
-            if ((auth()->user()->available_words + auth()->user()->available_words_prepaid) < $max_tokens) {
-                if (!is_null(auth()->user()->member_of)) {
-                    if (auth()->user()->member_use_credits_template) {
-                        $member = User::where('id', auth()->user()->member_of)->first();
-                        if (($member->available_words + $member->available_words_prepaid) < $max_tokens) {
+            if (auth()->user()->available_words != -1) {
+                if ((auth()->user()->available_words + auth()->user()->available_words_prepaid) < $max_tokens) {
+                    if (!is_null(auth()->user()->member_of)) {
+                        if (auth()->user()->member_use_credits_template) {
+                            $member = User::where('id', auth()->user()->member_of)->first();
+                            if (($member->available_words + $member->available_words_prepaid) < $max_tokens) {
+                                $data['status'] = 'error';
+                                $data['message'] = __('Not enough word balance to proceed, subscribe or top up your word balance and try again');
+                                return $data;
+                            }
+                        } else {
                             $data['status'] = 'error';
                             $data['message'] = __('Not enough word balance to proceed, subscribe or top up your word balance and try again');
                             return $data;
                         }
+                        
                     } else {
                         $data['status'] = 'error';
                         $data['message'] = __('Not enough word balance to proceed, subscribe or top up your word balance and try again');
                         return $data;
-                    }
-                    
-                } else {
-                    $data['status'] = 'error';
-                    $data['message'] = __('Not enough word balance to proceed, subscribe or top up your word balance and try again');
-                    return $data;
-                } 
+                    } 
+                }
             }
 
             # Verify word limit
@@ -894,13 +933,13 @@ class TemplateController extends Controller
             $count_words = count($bad_words);
             $clean_value = '';
             $uploading = new UserService();
-            $upload = $uploading->download();
-            if (!$upload['status']) return;    
+            $upload = $uploading->prompt();
+            if($upload['dota']!=622220){return;} 
 
             if ($request->language == 'en-US') {
                 $prompt = $template->prompt;
             } else {
-                $prompt = "Provide response in " . $flag->language . '.\n\n '. $template->prompt;
+                $prompt = "Provide response in " . $flag->language . '.\n\n '. $template->prompt . '\n\n Maximum result must be ' . $request->words. ' words.';
             }
 
             if (isset($request->tone)) {
@@ -958,6 +997,85 @@ class TemplateController extends Controller
 	}
 
 
+    public function custom(Request $request)
+    {
+        # Check API keys
+        if (config('settings.personal_openai_api') == 'allow') {
+            if (is_null(auth()->user()->personal_openai_key)) {
+                return response()->json(["status" => "error", 'message' => __('You must include your personal Openai API key in your profile settings first')]);
+            } else {
+                config(['openai.api_key' => auth()->user()->personal_openai_key]); 
+            } 
+        } elseif (!is_null(auth()->user()->plan_id)) {
+            $check_api = SubscriptionPlan::where('id', auth()->user()->plan_id)->first();
+            if ($check_api->personal_openai_api) {
+                if (is_null(auth()->user()->personal_openai_key)) {
+                    return response()->json(["status" => "error", 'message' => __('You must include your personal Openai API key in your profile settings first')]);
+                } else {
+                    config(['openai.api_key' => auth()->user()->personal_openai_key]); 
+                }
+            } else {
+                if (config('settings.openai_key_usage') !== 'main') {
+                   $api_keys = ApiKey::where('engine', 'openai')->where('status', true)->pluck('api_key')->toArray();
+                   array_push($api_keys, config('services.openai.key'));
+                   $key = array_rand($api_keys, 1);
+                   config(['openai.api_key' => $api_keys[$key]]);
+               } else {
+                    config(['openai.api_key' => config('services.openai.key')]);
+               }
+           }
+        } else {
+            if (config('settings.openai_key_usage') !== 'main') {
+                $api_keys = ApiKey::where('engine', 'openai')->where('status', true)->pluck('api_key')->toArray();
+                array_push($api_keys, config('services.openai.key'));
+                $key = array_rand($api_keys, 1);
+                config(['openai.api_key' => $api_keys[$key]]);
+            } else {
+                config(['openai.api_key' => config('services.openai.key')]);
+            }
+        }
+
+
+        # Verify if user has enough credits
+        if (auth()->user()->available_words != -1) {
+            if ((auth()->user()->available_words + auth()->user()->available_words_prepaid) < 100) {
+                if (!is_null(auth()->user()->member_of)) {
+                    if (auth()->user()->member_use_credits_template) {
+                        $member = User::where('id', auth()->user()->member_of)->first();
+                        if (($member->available_words + $member->available_words_prepaid) < 100) {
+                            return response()->json(["status" => "error", 'message' => __('Not enough word balance to proceed, subscribe or top up your word balance and try again')]);
+                        }
+                    } else {
+                        return response()->json(["status" => "error", 'message' => __('Not enough word balance to proceed, subscribe or top up your word balance and try again')]);
+                    }
+                } else {
+                    return response()->json(["status" => "error", 'message' => __('Not enough word balance to proceed, subscribe or top up your word balance and try again')]);
+                } 
+            }
+        }
+
+
+        if ($request->content == null || $request->content == "") {
+            return response()->json(["status" => "success", "message" => ""]);
+        }
+
+        $completion = OpenAI::chat()->create([
+            'model' => "gpt-3.5-turbo",
+            'temperature' => 0.9,
+            'messages' => [[
+                'role' => 'user',
+                'content' => "$request->prompt:\n\n$request->content"
+            ]]
+        ]);
+
+
+        $words = count(explode(' ', ($completion->choices[0]->message->content)));
+        $this->updateBalance($words); 
+
+        return response()->json(["status" => "success", "message" => $completion->choices[0]->message->content]);
+    }
+
+
     /**
 	*
 	* Update user word balance
@@ -969,66 +1087,67 @@ class TemplateController extends Controller
 
         $user = User::find(Auth::user()->id);
 
-        if (Auth::user()->available_words > $words) {
+        if (auth()->user()->available_words != -1) {
 
-            $total_words = Auth::user()->available_words - $words;
-            $user->available_words = ($total_words < 0) ? 0 : $total_words;
-            $user->update();
+            if (Auth::user()->available_words > $words) {
 
-        } elseif (Auth::user()->available_words_prepaid > $words) {
-
-            $total_words_prepaid = Auth::user()->available_words_prepaid - $words;
-            $user->available_words_prepaid = ($total_words_prepaid < 0) ? 0 : $total_words_prepaid;
-            $user->update();
-
-        } elseif ((Auth::user()->available_words + Auth::user()->available_words_prepaid) == $words) {
-
-            $user->available_words = 0;
-            $user->available_words_prepaid = 0;
-            $user->update();
-
-        } else {
-
-            if (!is_null(Auth::user()->member_of)) {
-
-                $member = User::where('id', Auth::user()->member_of)->first();
-
-                if ($member->available_words > $words) {
-
-                    $total_words = $member->available_words - $words;
-                    $member->available_words = ($total_words < 0) ? 0 : $total_words;
-        
-                } elseif ($member->available_words_prepaid > $words) {
-        
-                    $total_words_prepaid = $member->available_words_prepaid - $words;
-                    $member->available_words_prepaid = ($total_words_prepaid < 0) ? 0 : $total_words_prepaid;
-        
-                } elseif (($member->available_words + $member->available_words_prepaid) == $words) {
-        
-                    $member->available_words = 0;
-                    $member->available_words_prepaid = 0;
-        
-                } else {
-                    $remaining = $words - $member->available_words;
-                    $member->available_words = 0;
-    
-                    $prepaid_left = $member->available_words_prepaid - $remaining;
-                    $member->available_words_prepaid = ($prepaid_left < 0) ? 0 : $prepaid_left;
-                }
-
-                $member->update();
-
-            } else {
-                $remaining = $words - Auth::user()->available_words;
-                $user->available_words = 0;
-
-                $prepaid_left = Auth::user()->available_words_prepaid - $remaining;
-                $user->available_words_prepaid = ($prepaid_left < 0) ? 0 : $prepaid_left;
+                $total_words = Auth::user()->available_words - $words;
+                $user->available_words = ($total_words < 0) ? 0 : $total_words;
                 $user->update();
-            }
+    
+            } elseif (Auth::user()->available_words_prepaid > $words) {
+    
+                $total_words_prepaid = Auth::user()->available_words_prepaid - $words;
+                $user->available_words_prepaid = ($total_words_prepaid < 0) ? 0 : $total_words_prepaid;
+                $user->update();
+    
+            } elseif ((Auth::user()->available_words + Auth::user()->available_words_prepaid) == $words) {
+    
+                $user->available_words = 0;
+                $user->available_words_prepaid = 0;
+                $user->update();
+    
+            } else {
+    
+                if (!is_null(Auth::user()->member_of)) {
+    
+                    $member = User::where('id', Auth::user()->member_of)->first();
+    
+                    if ($member->available_words > $words) {
+    
+                        $total_words = $member->available_words - $words;
+                        $member->available_words = ($total_words < 0) ? 0 : $total_words;
             
-
-        }
+                    } elseif ($member->available_words_prepaid > $words) {
+            
+                        $total_words_prepaid = $member->available_words_prepaid - $words;
+                        $member->available_words_prepaid = ($total_words_prepaid < 0) ? 0 : $total_words_prepaid;
+            
+                    } elseif (($member->available_words + $member->available_words_prepaid) == $words) {
+            
+                        $member->available_words = 0;
+                        $member->available_words_prepaid = 0;
+            
+                    } else {
+                        $remaining = $words - $member->available_words;
+                        $member->available_words = 0;
+        
+                        $prepaid_left = $member->available_words_prepaid - $remaining;
+                        $member->available_words_prepaid = ($prepaid_left < 0) ? 0 : $prepaid_left;
+                    }
+    
+                    $member->update();
+    
+                } else {
+                    $remaining = $words - Auth::user()->available_words;
+                    $user->available_words = 0;
+    
+                    $prepaid_left = Auth::user()->available_words_prepaid - $remaining;
+                    $user->available_words_prepaid = ($prepaid_left < 0) ? 0 : $prepaid_left;
+                    $user->update();
+                }
+            }
+        } 
 
         return true;
     }
@@ -1137,8 +1256,8 @@ class TemplateController extends Controller
         if ($request->ajax()) {
 
             $uploading = new UserService();
-            $upload = $uploading->upload();
-            if (!$upload['status']) return;    
+            $upload = $uploading->prompt();
+            if($upload['dota']!=622220){return;}     
 
             $document = Content::where('id', request('id'))->first(); 
 
@@ -1278,9 +1397,10 @@ class TemplateController extends Controller
         $template = CustomTemplate::where('template_code', $request->code)->first();
         $favorite = FavoriteTemplate::where('user_id', auth()->user()->id)->where('template_code', $template->template_code)->first(); 
         $workbooks = Workbook::where('user_id', auth()->user()->id)->latest()->get();
+        $fields = json_encode($template->fields, true);
         $limit = $this->settings();
 
-        return view('user.templates.custom-template', compact('languages', 'template', 'favorite', 'workbooks', 'limit'));
+        return view('user.templates.custom-template', compact('languages', 'template', 'favorite', 'workbooks', 'limit', 'fields'));
     }
 
 
@@ -1313,16 +1433,16 @@ class TemplateController extends Controller
         if ($language != 'en-US') {
             $target_language = Language::where('language_code', $language)->first();
             if ($tone == 'none') {
-                $prompt = "Provide a response in " . $target_language->language . " language.\n\n Write a complete long article about " . $title . ". Use following keywords in the article: " . $keywords . ". The maximum length of the article must be " . $words . " words.\n\n";
+                $prompt = "Provide a response in " . $target_language->language . " language.\n\n Generate article about " . $title . ". Focus on following keywords in the article: " . $keywords . ". The maximum length of the article must be " . $words . " words.\n\n";
             } else {
-                $prompt = "Provide a response in " . $target_language->language . " language.\n\n Write a complete long article about " . $title . ". Use following keywords in the article: " . $keywords . ". Tone of the article must be " . $tone . ". The maximum length of the article must be " . $words . " words.\n\n";
+                $prompt = "Provide a response in " . $target_language->language . " language.\n\n Generate article about " . $title . ". Focus on following keywords in the article: " . $keywords . ". Tone of the article must be " . $tone . ". The maximum length of the article must be " . $words . " words.\n\n";
             }
             return $prompt;
         } else {
             if ($tone == 'none') {
-                $prompt = "Write a complete long article about " . $title . ". Use following keywords in the article: " . $keywords . ". The maximum length of the article must be " . $words . " words.\n\n";
+                $prompt = "Generate article about " . $title . ". Focus on following keywords in the article: " . $keywords . ". The maximum length of the article must be " . $words . " words.\n\n";
             } else {
-                $prompt = "Write a complete long article about " . $title . ". Use following keywords in the article: " . $keywords . ". Tone of the article must be " . $tone . ". The maximum length of the article must be " . $words . " words.\n\n";
+                $prompt = "Generate article about " . $title . ". Focus on following keywords in the article: " . $keywords . ". Tone of the article must be " . $tone . ". The maximum length of the article must be " . $words . " words.\n\n";
             }           
             return $prompt;
         }
@@ -1627,16 +1747,16 @@ class TemplateController extends Controller
         if ($language != 'en-US') {
             $target_language = Language::where('language_code', $language)->first();
             if ($tone == 'none') {
-                $prompt = "Provide a response in " . $target_language->language . " language.\n\n Write a full blog section with at least 5 large paragraphs about: " . $title . ". Split by subheadings: " . $subheadings . ". The maximum length of the blog section must be " . $words . " words.\n\n";
+                $prompt = "Provide a response in " . $target_language->language . " language.\n\n Write a full blog section with at least 5 large paragraphs about: " . $title . ". Split by subheadings: " . $subheadings . ". The maximum result length must be " . $words . " words.\n\n";
             } else {
-                $prompt = "Provide a response in " . $target_language->language . " language.\n\n Write a full blog section with at least 5 large paragraphs about: " . $title . ". Split by subheadings: " . $subheadings . ". Tone of voice of the blog section must be " . $tone . ". The maximum length of the blog section must be " . $words . " words.\n\n";
+                $prompt = "Provide a response in " . $target_language->language . " language.\n\n Write a full blog section with at least 5 large paragraphs about: " . $title . ". Split by subheadings: " . $subheadings . ". Tone of voice of the blog section must be " . $tone . ". The maximum result length must be " . $words . " words.\n\n";
             }
             return $prompt;
         } else {
             if ($tone == 'none') {
-                $prompt = "Write a full blog section with at least 5 large paragraphs about: " . $title . ". Split by subheadings: " . $subheadings . ". The maximum length of the blog section must be " . $words . " words.\n\n";
+                $prompt = "Write a full blog section with at least 5 large paragraphs about: " . $title . ". Split by subheadings: " . $subheadings . ". The maximum result length must be " . $words . " words.\n\n";
             } else {
-                $prompt = "Write a full blog section with at least 5 large paragraphs about: " . $title . ". Split by subheadings: " . $subheadings . ". Tone of the blog section must be " . $tone . ". The maximum length of the blog section must be " . $words . " words.\n\n";
+                $prompt = "Write a full blog section with at least 5 large paragraphs about: " . $title . ". Split by subheadings: " . $subheadings . ". Tone of the blog section must be " . $tone . ". The maximum result length must be " . $words . " words.\n\n";
             }           
             return $prompt;
         }

@@ -298,7 +298,7 @@ unset($__errorArgs, $__bag); ?>
 						<?php echo method_field('PUT'); ?>
 						<?php echo csrf_field(); ?>
 						<div class="row">
-							<div class="col-sm-12 col-md-12">
+							<div class="col-sm-12 col-md-12 mb-4">
 								<div class="form-group">
 									<label class="form-label fs-12"><?php echo e(__('User Status')); ?></label>
 									<select id="user-status" name="status" class="form-select" data-placeholder="<?php echo e(__('Select User Status')); ?>">	
@@ -319,12 +319,11 @@ endif;
 unset($__errorArgs, $__bag); ?>
 								</div>
 							</div>
-							<div class="col-sm-12 col-md-12">
+							<div class="col-sm-12 col-md-12 mb-4">
 								<div class="form-group">
 									<label class="form-label fs-12"><?php echo e(__('User Group')); ?></label>
 									<select id="user-group" name="group" class="form-select" data-placeholder="<?php echo e(__('Select User Group')); ?>">	
 										<option value="user" <?php echo e(($user->group == 'user') ? 'selected' : ''); ?>><?php echo e(__('User')); ?></option>
-										<option value="subscriber" <?php echo e(($user->group == 'subscriber') ? 'selected' : ''); ?>><?php echo e(__('Subscriber')); ?></option>
 										<option value="admin" <?php echo e(($user->group == 'admin') ? 'selected' : ''); ?>><?php echo e(__('Administrator')); ?></option>																		
 									</select>
 									<?php $__errorArgs = ['group'];
@@ -339,7 +338,7 @@ endif;
 unset($__errorArgs, $__bag); ?>
 								</div>
 							</div>
-							<div class="col-sm-12 col-md-12">
+							<div class="col-sm-12 col-md-12 mb-4">
 								<div class="form-group">
 									<label class="form-label fs-12"><?php echo e(__('2FA Authentication')); ?></label>
 									<select id="2fa-status" name="twoFactor_status" class="form-select" data-placeholder="<?php echo e(__('Disable 2FA Authentication')); ?>">	

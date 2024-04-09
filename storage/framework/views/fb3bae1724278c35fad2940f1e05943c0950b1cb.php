@@ -30,21 +30,21 @@
 							<div class="text-center p-2">
 								<div class="d-flex w-100">
 									<div class="flex w-100">
-										<h4 class="mb-3 mt-3 font-weight-800 fs-16"><?php echo e(number_format($user->available_words + $user->available_words_prepaid)); ?> / <?php echo e(number_format($user->total_words)); ?></h4>
+										<h4 class="mb-3 mt-3 font-weight-800 fs-16"><?php if($user->available_words == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(number_format($user->available_words + $user->available_words_prepaid)); ?> <?php endif; ?></h4>
 										<h6 class="fs-12 mb-3"><?php echo e(__('Words Left')); ?></h6>
 									</div>			
 									<div class="flex w-100">
-										<h4 class="mb-3 mt-3 font-weight-800 fs-16"><?php echo e(number_format($user->available_images + $user->available_images_prepaid)); ?> / <?php echo e(number_format($user->total_images)); ?></h4>
+										<h4 class="mb-3 mt-3 font-weight-800 fs-16"><?php if($user->available_images == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(number_format($user->available_images + $user->available_images_prepaid)); ?> <?php endif; ?></h4>
 										<h6 class="fs-12 mb-3"><?php echo e(__('Images Left')); ?></h6>
 									</div>	
 								</div>	
 								<div class="d-flex w-100">
 									<div class="flex w-100">
-										<h4 class="mb-3 mt-3 font-weight-800 fs-16"><?php echo e(number_format($user->available_chars + $user->available_chars_prepaid)); ?> / <?php echo e(number_format($user->total_chars)); ?></h4>
+										<h4 class="mb-3 mt-3 font-weight-800 fs-16"><?php if($user->available_chars == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(number_format($user->available_chars + $user->available_chars_prepaid)); ?> <?php endif; ?></h4>
 										<h6 class="fs-12 mb-3"><?php echo e(__('Characters Left')); ?></h6>
 									</div>			
 									<div class="flex w-100">
-										<h4 class="mb-3 mt-3 font-weight-800 fs-16"><?php echo e(number_format($user->available_minutes + $user->available_minutes_prepaid)); ?> / <?php echo e(number_format($user->total_minutes)); ?></h4>
+										<h4 class="mb-3 mt-3 font-weight-800 fs-16"><?php if($user->available_minutes == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(number_format($user->available_minutes + $user->available_minutes_prepaid)); ?> <?php endif; ?></h4>
 										<h6 class="fs-12 mb-3"><?php echo e(__('Minutes Left')); ?></h6>
 									</div>	
 								</div>
@@ -57,8 +57,9 @@
 					<div>
 						<h4 class="mb-1 mt-1 font-weight-bold fs-16"><?php echo e($user->name); ?></h4>
 						<h6 class="text-muted fs-12"><?php echo e($user->job_role); ?></h6>
-						<a href="<?php echo e(route('admin.user.edit', [$user->id])); ?>" class="btn btn-primary mt-3 mb-2 mr-2 pl-5 pr-5"><i class="fa-solid fa-pencil mr-1"></i> <?php echo e(__('Update Profile')); ?></a>
-						<a href="<?php echo e(route('admin.user.credit', [$user->id])); ?>" class="btn btn-primary mt-3 mb-2"><i class="fa-solid fa-scroll-old mr-1"></i><?php echo e(__('Add Credits')); ?></a>
+						<a href="<?php echo e(route('admin.user.edit', [$user->id])); ?>" class="btn btn-primary mt-3 mb-2 mr-2"><i class="fa-solid fa-pencil mr-1"></i> <?php echo e(__('Update Profile')); ?></a>
+						<a href="<?php echo e(route('admin.user.credit', [$user->id])); ?>" class="btn btn-primary mt-3 mb-2"><i class="fa-solid fa-scroll-old mr-1"></i><?php echo e(__('Update Credits')); ?></a>
+						<a href="<?php echo e(route('admin.user.subscription', [$user->id])); ?>" class="btn btn-primary mt-3 mb-2"><i class="fa-solid fa-box-circle-check mr-1"></i><?php echo e(__('Add Subscription')); ?></a>
 					</div>
 				</div>
 				
@@ -198,6 +199,32 @@
 									</div>
 								</div>
 							</div>
+							<div class="col-lg-6 col-md-12 col-sm-12">
+								<div class="card overflow-hidden border-0">
+									<div class="card-body d-flex">
+										<div class="usage-info w-100">
+											<p class=" mb-3 fs-12 font-weight-bold"><?php echo e(__('Characters Synthesized')); ?></p>
+											<h2 class="mb-2 number-font fs-20"><?php echo e(number_format($data['characters'])); ?> <span class="text-muted fs-18"><?php echo e(__('characters')); ?></span></h2>
+										</div>
+										<div class="usage-icon w-100 text-right">
+											<i class="fa-solid fa-waveform-lines"></i>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-lg-6 col-md-12 col-sm-12">
+								<div class="card overflow-hidden border-0">
+									<div class="card-body d-flex">
+										<div class="usage-info w-100">
+											<p class=" mb-3 fs-12 font-weight-bold"><?php echo e(__('Minutes Transcribed')); ?></p>
+											<h2 class="mb-2 number-font fs-20"><?php echo e(number_format((float)$data['minutes']/60, 2)); ?> <span class="text-muted fs-18"><?php echo e(__('minutes')); ?></span></h2>
+										</div>
+										<div class="usage-icon w-100 text-right">
+											<i class="fa-solid fa-folder-music"></i>
+										</div>
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -205,8 +232,19 @@
 				<div class="col-lg-12 col-md-12 col-sm-12">
 					<div class="card mb-5 border-0">
 						<div class="card-header d-inline border-0">
-							<div>
-								<h3 class="card-title fs-16 mt-3 mb-4"><i class="fa-solid fa-box-open mr-4 text-info"></i><?php echo e(__('Subscription ')); ?></h3>
+							<div class="d-flex">
+								<div class="w-100">
+									<h3 class="card-title fs-16 mt-3 mb-4"><i class="fa-solid fa-box-open mr-4 text-info"></i><?php echo e(__('Subscription')); ?></h3>
+								</div>
+								<div class="w-30">
+									<div class="form-group mt-3">
+										<label class="custom-switch">
+											<input type="checkbox" name="hidden-plans" class="custom-switch-input" id="hidden-plans" onchange="toggleHidden()" <?php if( $user->hidden_plan): ?> checked <?php endif; ?>>
+											<span class="custom-switch-indicator"></span>
+											<span class="custom-switch-description"><?php echo e(__('Show Hidden Plans to this User')); ?></span>
+										</label>
+									</div>
+								</div>
 							</div>
 							<?php if($user_subscription == ''): ?>
 								<div>
@@ -227,9 +265,9 @@
 						<div class="card-body">
 							<div class="mb-3">
 								<?php if($user_subscription == ''): ?>
-								<span class="fs-12 text-muted"><?php echo e(__('Total one time words available ')); ?> <?php echo e(number_format($user->available_words)); ?>.</span> <span class="fs-12 text-muted"><?php echo e(__('Total prepaid words available ')); ?> <?php echo e(number_format($user->available_words_prepaid)); ?>. </span>
+									<span class="fs-12 text-muted"><?php echo e(__('Total words available')); ?>: <?php if($user->available_words == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(number_format($user->available_words)); ?> <?php endif; ?>.</span> <span class="fs-12 text-muted"><?php echo e(__('Total prepaid words available ')); ?> <?php echo e(number_format($user->available_words_prepaid)); ?>. </span>
 								<?php else: ?>
-									<span class="fs-12 text-muted"><?php echo e(__('Total words available via subscription plan ')); ?> <?php echo e(number_format($user->available_words)); ?> <?php echo e(__(' out of ')); ?> <?php echo e(number_format($user->total_words)); ?>. </span> <span class="fs-12 text-muted"><?php echo e(__('Total prepaid words available ')); ?> <?php echo e(number_format($user->available_words_prepaid)); ?>. </span>
+									<span class="fs-12 text-muted"><?php echo e(__('Total words available via subscription plan')); ?>: <?php if($user->available_words == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(number_format($user->available_words)); ?> <?php endif; ?>.</span> <span class="fs-12 text-muted"><?php echo e(__('Total prepaid words available ')); ?>: <?php echo e(number_format($user->available_words_prepaid)); ?>. </span>
 								<?php endif; ?>
 							</div>
 							<div class="progress mb-4">
@@ -284,9 +322,9 @@
 			new Chart(ctx, {
 				type: 'bar',
 				data: {
-					labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+					labels: ['<?php echo e(__('Jan')); ?>', '<?php echo e(__('Feb')); ?>', '<?php echo e(__('Mar')); ?>', '<?php echo e(__('Apr')); ?>', '<?php echo e(__('May')); ?>', '<?php echo e(__('Jun')); ?>', '<?php echo e(__('Jul')); ?>', '<?php echo e(__('Aug')); ?>', '<?php echo e(__('Sep')); ?>', '<?php echo e(__('Oct')); ?>', '<?php echo e(__('Nov')); ?>', '<?php echo e(__('Dec')); ?>'],
 					datasets: [{
-						label: 'Words Generated',
+						label: '<?php echo e(__('Words Generated')); ?>',
 						data: usageDataset,
 						backgroundColor: '#007bff',
 						borderWidth: 1,
@@ -369,6 +407,32 @@
 			});
 
 		});
+
+		function toggleHidden() {
+
+			var formData = new FormData();
+			formData.append("status", $('#hidden-plans').is(':checked') );
+			formData.append("user_id", <?php echo e($user->id); ?>);
+
+			$.ajax({
+				headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+				method: 'post',
+				url: '/admin/users/plan',
+				data: formData,
+				processData: false,
+				contentType: false,
+				success: function (data) {
+					if (data['status'] == 200) {
+						toastr.success('Hidden subscription plans visibility updated');								
+					} else {
+						toastr.error('There was an issue setting hidden plan visibility status');
+					}      
+				},
+				error: function(data) {
+					toastr.error('There was an issue setting hidden plan visibility status');
+				}
+			})
+		}
 	</script>
 <?php $__env->stopSection(); ?>
 

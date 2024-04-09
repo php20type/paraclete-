@@ -44,6 +44,7 @@
 											<th width="8%"><?php echo e(__('Name')); ?></th> 											
 											<th width="8%"><?php echo e(__('Character')); ?></th>
 											<th width="3%"><?php echo e(__('Package')); ?></th>						
+											<th width="3%"><?php echo e(__('Group')); ?></th>						
 											<th width="3%"><?php echo e(__('Updated On')); ?></th>	    										 						           	
 											<th width="4%"><?php echo e(__('Actions')); ?></th>
 										</tr>
@@ -75,6 +76,7 @@
 				colReorder: true,
 				language: {
 					search: "<i class='fa fa-search search-icon'></i>",
+					"info": "<?php echo e(__('Showing page')); ?> _PAGE_ <?php echo e(__('of')); ?> _PAGES_",
 					lengthMenu: '_MENU_ ',
 					paginate : {
 						first    : '<i class="fa fa-angle-double-left"></i>',
@@ -117,7 +119,13 @@
 						name: 'custom-package',
 						orderable: true,
 						searchable: true
-					},						
+					},		
+					{
+						data: 'custom-group',
+						name: 'custom-group',
+						orderable: true,
+						searchable: true
+					},					
 					{
 						data: 'created-on',
 						name: 'created-on',

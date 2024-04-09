@@ -13,8 +13,24 @@
             <span class="side-menu__icon lead-3 fa-solid fa-chart-tree-map"></span>
             <span class="side-menu__label">{{ __('Dashboard') }}</span></a>
         </li> 
+        @role('user|subscriber')
+            @if (config('settings.wizard_feature_user') == 'allow')
+                <li class="slide">
+                    <a class="side-menu__item" href="{{ route('user.wizard') }}">
+                    <span class="side-menu__icon lead-3 fs-18 fa-solid fa-sharp fa-sparkles"></span>
+                    <span class="side-menu__label">{{ __('AI Article Wizard') }}</span><span class="text-primary fs-9 side-menu__new">New</span></a>
+                </li> 
+            @endif
+        @endrole
+        @role('admin')
+            <li class="slide">
+                <a class="side-menu__item" href="{{ route('user.wizard') }}">
+                <span class="side-menu__icon lead-3 fs-18 fa-solid fa-sharp fa-sparkles"></span>
+                <span class="side-menu__label">{{ __('AI Article Wizard') }}</span><span class="text-primary fs-9 side-menu__new">New</span></a>
+            </li> 
+        @endrole
         <li class="slide">
-            <a class="side-menu__item"  href="{{ route('user.templates') }}">
+            <a class="side-menu__item" href="{{ route('user.templates') }}">
             <span class="side-menu__icon lead-3 fs-18 fa-solid fa-microchip-ai"></span>
             <span class="side-menu__label">{{ __('Templates') }}</span></a>
         </li> 
@@ -85,7 +101,7 @@
                 </li> 
             @endif
         @endrole
-      @role('admin')
+        @role('admin')
             <li class="slide">
                 <a class="side-menu__item" href="{{ route('user.transcribe') }}">
                 <span class="side-menu__icon fa-sharp fa-solid fa-folder-music"></span>
@@ -95,7 +111,7 @@
         @role('user|subscriber')
             @if (config('settings.image_feature_user') == 'allow')
                 <li class="slide">
-                    <a class="side-menu__item" href="{{ route('user.images')}}">
+                    <a class="side-menu__item" href="{{ route('user.images') }}">
                     <span class="side-menu__icon lead-3 fa-solid fa-camera-viewfinder"></span>
                     <span class="side-menu__label">{{ __('AI Images') }}</span></a>
                 </li> 
@@ -103,7 +119,7 @@
         @endrole
         @role('admin')
             <li class="slide">
-                <a class="side-menu__item" href="{{ route('user.images')}}">
+                <a class="side-menu__item" href="{{ route('user.images') }}">
                 <span class="side-menu__icon lead-3 fa-solid fa-camera-viewfinder"></span>
                 <span class="side-menu__label">{{ __('AI Images') }}</span></a>
             </li>
@@ -111,7 +127,7 @@
         @role('user|subscriber')
             @if (config('settings.code_feature_user') == 'allow')
                 <li class="slide">
-                    <a class="side-menu__item" href="{{ route('user.codex')}}">
+                    <a class="side-menu__item" href="{{ route('user.codex') }}">
                     <span class="side-menu__icon fa-solid fa-square-code"></span>
                     <span class="side-menu__label">{{ __('AI Code') }}</span></a>
                 </li> 
@@ -119,15 +135,31 @@
         @endrole
         @role('admin')
             <li class="slide">
-                <a class="side-menu__item" href="{{ route('user.codex')}}">
+                <a class="side-menu__item" href="{{ route('user.codex') }}">
                 <span class="side-menu__icon fa-solid fa-square-code"></span>
                 <span class="side-menu__label">{{ __('AI Code') }}</span></a>
             </li>
         @endrole 
         @role('user|subscriber')
+            @if (config('settings.vision_feature_user') == 'allow')
+                <li class="slide">
+                    <a class="side-menu__item" href="{{ route('user.vision') }}">
+                    <span class="side-menu__icon lead-3 fs-18 fa-solid fa-brain-circuit"></span>
+                    <span class="side-menu__label">{{ __('AI Vision') }}</span><span class="text-primary fs-9 side-menu__new">New</span></a>
+                </li> 
+            @endif
+        @endrole
+        @role('admin')
+            <li class="slide">
+                <a class="side-menu__item" href="{{ route('user.vision') }}">
+                <span class="side-menu__icon lead-3 fs-18 fa-solid fa-brain-circuit"></span>
+                <span class="side-menu__label">{{ __('AI Vision') }}</span><span class="text-primary fs-9 side-menu__new">New</span></a>
+            </li> 
+        @endrole
+        @role('user|subscriber')
             @if (config('settings.chat_feature_user') == 'allow')
                 <li class="slide mb-3">
-                    <a class="side-menu__item" href="{{ route('user.chat')}}">
+                    <a class="side-menu__item" href="{{ route('user.chat') }}">
                     <span class="side-menu__icon lead-3 fa-solid fa-message-captions"></span>
                     <span class="side-menu__label">{{ __('AI Chat Staff') }}</span></a>
                 </li> 
@@ -135,12 +167,12 @@
         @endrole
         @role('admin')
             <li class="slide mb-3">
-                <a class="side-menu__item" href="{{ route('user.chat')}}">
+                <a class="side-menu__item" href="{{ route('user.chat') }}">
                 <span class="side-menu__icon lead-3 fa-solid fa-message-captions"></span>
                 <span class="side-menu__label">{{ __('AI Chat Staff') }}</span></a>
             </li>
-        @endrole 
-        @role('admin')
+        @endrole    
+		@role('admin')
             <li class="slide mb-3">
                 <a class="side-menu__item" href="{{ route('smart.ads') }}">
                 <span class="side-menu__icon lead-3 fa-solid fa-rectangle-ad"></span>
@@ -188,12 +220,11 @@
                 <span class="side-menu__label">{{ __('Media Editor') }}</span></a>
             </li>
         @endrole          
-
         @role('user|subscriber')
             
                 <li class="slide mb-3">
                     <a class="side-menu__item" href="{{ route('user.rss-feed') }}">
-                    <span class="side-menu__icon fa-solid fa fa-rsst"></span>
+                    <span class="side-menu__icon fa-solid fa fa-rss"></span>
                     <span class="side-menu__label">{{ __('Viral Feed') }}</span></a>
                 </li> 
            
@@ -205,24 +236,39 @@
                 <span class="side-menu__label">{{ __('Viral Feed') }}</span></a>
             </li>
         @endrole       
-
-         @role('user|subscriber')
+        @role('user|subscriber')
             
                 <li class="slide mb-3">
-                    <a class="side-menu__item" href="{{ route('user.agentAi') }}">
-                    <span class="side-menu__icon fa-solid fa  fa-user-secret"></span>
-                    <span class="side-menu__label">{{ __('Agentic AI') }}</span></a>
+                    <a class="side-menu__item" href="{{ route('user.automation') }}">
+                    <span class="side-menu__icon fa-solid fa fa-robot"></span>
+                    <span class="side-menu__label">{{ __('Builder') }}</span></a>
                 </li> 
            
         @endrole
         @role('admin')
             <li class="slide mb-3">
-             <a class="side-menu__item" href="{{ route('user.agentAi') }}">
-                <span class="side-menu__icon fa-solid fa-user-secret"></span>
-                <span class="side-menu__label">{{ __('Agentic AI') }}</span></a>
+             <a class="side-menu__item" href="{{ route('user.automation') }}">
+                <span class="side-menu__icon fa-solid fa fa-robot"></span>
+                <span class="side-menu__label">{{ __('Builder') }}</span></a>
             </li>
-        @endrole          
+        @endrole     
 
+        @role('user|subscriber')
+            
+                <li class="slide mb-3">
+                    <a class="side-menu__item" href="{{ route('user.resume') }}">
+                    <span class="side-menu__icon fa-solid fa fa-file"></span>
+                    <span class="side-menu__label">{{ __('AI Resume') }}</span></a>
+                </li> 
+           
+        @endrole
+        @role('admin')
+            <li class="slide mb-3">
+             <a class="side-menu__item" href="{{ route('user.resume') }}">
+                <span class="side-menu__icon fa-solid fa fa-file"></span>
+                <span class="side-menu__label">{{ __('AI resume') }}</span></a>
+            </li>
+        @endrole     
 
         <hr class="w-90 text-center m-auto">
         <li class="side-item side-item-category mt-4 mb-3">{{ __('Account') }}</li>
@@ -268,11 +314,13 @@
                         <li><a href="{{ route('admin.davinci.dashboard') }}" class="slide-item">{{ __('Davinci Dashboard') }}</a></li>
                         <li><a href="{{ route('admin.davinci.templates') }}" class="slide-item">{{ __('Davinci Templates') }}</a></li>
                         <li><a href="{{ route('admin.davinci.custom') }}" class="slide-item">{{ __('Custom Templates') }}</a></li>
-                        <li><a href="{{ route('admin.davinci.custom.category') }}" class="slide-item">{{ __('Template Categories') }}</a></li>
-                        <li><a href="{{ route('admin.davinci.voices') }}" class="slide-item">{{ __('Voices Customization') }}</a></li>
                         <li><a href="{{ route('admin.davinci.chats') }}" class="slide-item">{{ __('AI Chats Customization') }}</a></li>
+                        <li><a href="{{ route('admin.davinci.custom.category') }}" class="slide-item">{{ __('Template Categories') }}</a></li>
+                        <li><a href="{{ route('admin.davinci.chat.category') }}" class="slide-item">{{ __('Chat Categories') }}</a></li>
+                        <li><a href="{{ route('admin.davinci.chat.prompt') }}" class="slide-item">{{ __('Chat Prompts') }}</a></li>
+                        <li><a href="{{ route('admin.davinci.voices') }}" class="slide-item">{{ __('Voices Customization') }}</a></li>                        
                         <li><a href="{{ route('admin.davinci.configs') }}" class="slide-item">{{ __('Davinci Settings') }}</a></li>
-                        <li><a href="{{ route('admin.davinci.banner') }}" class="slide-item">{{ __('Banner') }}</a></li>
+						 <li><a href="{{ route('admin.davinci.banner') }}" class="slide-item">{{ __('Banner') }}</a></li>
                     </ul>
             </li>
             <li class="slide">
@@ -348,11 +396,15 @@
                     <span class="side-menu__label">{{ __('Frontend Management') }}</span><i class="angle fa fa-angle-right"></i></a>
                     <ul class="slide-menu">
                         <li><a href="{{ route('admin.settings.frontend') }}" class="slide-item">{{ __('Frontend Settings') }}</a></li>
-                        <li><a href="{{ route('admin.settings.appearance') }}" class="slide-item">{{ __('SEO & Logos') }}</a></li>                        
+                        <li><a href="{{ route('admin.settings.appearance') }}" class="slide-item">{{ __('SEO & Logos') }}</a></li>
+                        <li><a href="{{ route('admin.settings.step') }}" class="slide-item">{{ __('How it Works Section') }}</a></li>
+                        <li><a href="{{ route('admin.settings.tool') }}" class="slide-item">{{ __('AI Tools Section') }}</a></li>                                           
+                        <li><a href="{{ route('admin.settings.feature') }}" class="slide-item">{{ __('Features Section') }}</a></li>                      
+                        <li><a href="{{ route('admin.settings.review') }}" class="slide-item">{{ __('Reviews Manager') }}</a></li>                      
                         <li><a href="{{ route('admin.settings.blog') }}" class="slide-item">{{ __('Blogs Manager') }}</a></li>
-                        <li><a href="{{ route('admin.settings.faq') }}" class="slide-item">{{ __('FAQs Manager') }}</a></li>
-                        <li><a href="{{ route('admin.settings.review') }}" class="slide-item">{{ __('Reviews Manager') }}</a></li>
-                        <li><a href="{{ route('admin.settings.terms') }}" class="slide-item">{{ __('T&C Pages Manager') }}</a></li>                           
+                        <li><a href="{{ route('admin.settings.faq') }}" class="slide-item">{{ __('FAQs Manager') }}</a></li>                        
+                        <li><a href="{{ route('admin.settings.about') }}" class="slide-item">{{ __('About Us Page') }}</a></li>                           
+                        <li><a href="{{ route('admin.settings.terms') }}" class="slide-item">{{ __('T&C Pages') }}</a></li>                           
                         <li><a href="{{ route('admin.settings.adsense') }}" class="slide-item">{{ __('Google Adsense') }}</a></li>                           
                     </ul>
             </li>
@@ -381,16 +433,29 @@
                 <div class="flex w-100">
                     <span class="fs-11 font-weight-600 side-word-notification"><i class="fa-solid fa-message-lines text-primary mr-2"></i><span class="text-muted">{{ __('Words') }}</span> <span class="text-primary ml-1" id="available-words">{{ App\Services\HelperService::getTotalWords()}}</span></span>
                 </div> 
-                <div class="flex w-100">
-                    <span class="fs-11 font-weight-600 side-word-notification"><i class="fa-sharp fa-solid fa-message-image text-primary mr-2"></i><span class="text-muted">{{ __('Images') }}</span> <span class="text-primary ml-1" id="available-images">{{ App\Services\HelperService::getTotalImages()}}</span></span>
-                </div> 
-                <div class="flex w-100">
-                    <span class="fs-11 font-weight-600 side-word-notification"><i class="fa-sharp fa-solid fa-message-music text-primary mr-2"></i><span class="text-muted">{{ __('Minutes') }}</span> <span class="text-primary ml-1" id="available-minutes">{{ App\Services\HelperService::getTotalMinutes()}}</span></span>
-                </div> 
-                <div class="flex w-100">
-                    <span class="fs-11 font-weight-600 side-word-notification"><i class="fa-solid fa-message-captions text-primary mr-2"></i><span class="text-muted">{{ __('Characters') }}</span> <span class="text-primary ml-1" id="available-characters">{{ App\Services\HelperService::getTotalCharacters()}}</span></span>
-                </div>                     
+                @role('user|subscriber|admin')
+                    @if (config('settings.image_feature_user') == 'allow')
+                        <div class="flex w-100">
+                            <span class="fs-11 font-weight-600 side-word-notification"><i class="fa-sharp fa-solid fa-message-image text-primary mr-2"></i><span class="text-muted">{{ __('Images') }}</span> <span class="text-primary ml-1" id="available-images">{{ App\Services\HelperService::getTotalImages()}}</span></span>
+                        </div> 
+                    @endif
+                @endrole
+                @role('user|subscriber|admin')
+                    @if (config('settings.whisper_feature_user') == 'allow')
+                        <div class="flex w-100">
+                            <span class="fs-11 font-weight-600 side-word-notification"><i class="fa-sharp fa-solid fa-message-music text-primary mr-2"></i><span class="text-muted">{{ __('Minutes') }}</span> <span class="text-primary ml-1" id="available-minutes">{{ App\Services\HelperService::getTotalMinutes()}}</span></span>
+                        </div> 
+                    @endif
+                @endrole
+                @role('user|subscriber|admin')
+                    @if (config('settings.voiceover_feature_user') == 'allow')
+                        <div class="flex w-100">
+                            <span class="fs-11 font-weight-600 side-word-notification"><i class="fa-solid fa-message-captions text-primary mr-2"></i><span class="text-muted">{{ __('Characters') }}</span> <span class="text-primary ml-1" id="available-characters">{{ App\Services\HelperService::getTotalCharacters()}}</span></span>
+                        </div>   
+                    @endif
+                @endrole                  
             </div>
         </div>
     </ul>
 </aside>
+<!-- END SIDE MENU BAR -->

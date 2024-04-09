@@ -93,7 +93,7 @@ unset($__errorArgs, $__bag); ?>
 									<h6><?php echo e(__('Template Category')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
 									<select id="image-feature-user" name="category" class="form-select" data-placeholder="<?php echo e(__('Select template category')); ?>">
 										<?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-											<option value="<?php echo e($category->code); ?>"  <?php if($id->group == $category->code): ?> selected <?php endif; ?>> <?php echo e(ucfirst($category->name)); ?></option>
+											<option value="<?php echo e($category->code); ?>"  <?php if($id->group == $category->code): ?> selected <?php endif; ?>> <?php echo e(__(ucfirst($category->name))); ?></option>
 										<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>																																																														
 									</select>
 								</div>

@@ -544,7 +544,6 @@ unset($__errorArgs, $__bag); ?>
 											<h6><?php echo e(__('Default Group for New Users')); ?></h6>
 											<select id="user-group" name="user-group" class="form-select" data-placeholder="<?php echo e(__('Select Default New User Group')); ?>">	
 												<option value="user" <?php echo e((config('settings.default_user') == 'user') ? 'selected' : ''); ?>><?php echo e(__('User')); ?></option>
-												<option value="subscriber" <?php echo e((config('settings.default_user') == 'subscriber') ? 'selected' : ''); ?>><?php echo e(__('Subscriber')); ?></option>
 												<option value="admin" <?php echo e((config('settings.default_user') == 'admin') ? 'selected' : ''); ?>><?php echo e(__('Administrator')); ?></option>																		
 											</select> 
 										</div> 

@@ -1,4 +1,3 @@
-
 <?php $__env->startSection('css'); ?>
 	<!-- Data Table CSS -->
 	<link href="<?php echo e(URL::asset('plugins/datatable/datatables.min.css')); ?>" rel="stylesheet" />
@@ -12,10 +11,10 @@
 	<div class="row mt-24">
 		<div class="col-lg-12 col-md-12 col-xm-12">
 			<div class="card border-0">
-				<div class="text-center mt-4"><a class="info-btn-alt" data-bs-toggle="modal" data-bs-target="#info-alert-model" href="javascript:void(0)">How It work ?</a></div>
 				<div class="card-header pt-4 border-0" id="voiceover-character-counter-top">
+					<div class="text-center"><a class="info-btn-alt" data-bs-toggle="modal" data-bs-target="#info-alert-model" href="javascript:void(0)">How It works ?</a></div>
 					<h3 class="card-title"><i class="fa-sharp fa-solid fa-waveform-lines mr-4 text-info"></i><?php echo e(__('AI Voiceover Studio')); ?> </h3>
-					<span class="fs-11 text-muted pl-3" id="voiceover-character-counter"><i class="fa-sharp fa-solid fa-bolt-lightning mr-2 text-primary"></i><?php echo e(__('Your Balance is')); ?> <span class="font-weight-semibold" id="balance-number"><?php echo e(number_format(auth()->user()->available_chars + auth()->user()->available_chars_prepaid)); ?></span> <?php echo e(__('Characters')); ?></span>
+					<span class="fs-11 text-muted pl-3" id="voiceover-character-counter"><i class="fa-sharp fa-solid fa-bolt-lightning mr-2 text-primary"></i><?php echo e(__('Your Balance is')); ?> <span class="font-weight-semibold" id="balance-number"><?php if(auth()->user()->available_chars == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(number_format(auth()->user()->available_chars + auth()->user()->available_chars_prepaid)); ?> <?php echo e(__('Characters')); ?> <?php endif; ?></span></span>
 				</div>
 				<div class="card-body pt-2 pl-7 pr-7 pb-4" id="tts-body-minify">
 				
@@ -27,7 +26,7 @@
 									<div class="form-group">									
 										<select id="languages" name="language" class="form-select" data-placeholder="<?php echo e(__('Pick Your Language')); ?>:" data-callback="language_select">	
 											<?php $__currentLoopData = $languages; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $language): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-												<option value="<?php echo e($language->language_code); ?>" data-img="<?php echo e(URL::asset($language->language_flag)); ?>" <?php if(auth()->user()->default_voiceover_language == $language->language_code): ?> selected <?php endif; ?>> <?php echo e($language->language); ?></option>
+												<option value="<?php echo e($language->language_code); ?>" data-img="<?php echo e(URL::asset($language->language_flag)); ?>" <?php if(auth()->user()->default_voiceover_language == $language->language_code): ?> selected <?php endif; ?>> <?php echo e(__($language->language)); ?></option>
 											<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>											
 										</select>
 									</div>
@@ -41,11 +40,11 @@
 													<?php $__currentLoopData = $voices; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $voice): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
 														<option value="<?php echo e($voice->voice_id); ?>" 
 															id="<?php echo e($voice->voice_id); ?>"
-															data-img="<?php echo e(URL::asset($voice->avatar_url)); ?>"
+															data-img="<?php if($voice->vendor == 'elevenlabs'): ?> <?php echo e($voice->avatar_url); ?> <?php else: ?> <?php echo e(URL::asset($voice->avatar_url)); ?> <?php endif; ?>"
 															data-id="<?php echo e($voice->voice_id); ?>" 
 															data-lang="<?php echo e($voice->language_code); ?>" 
-															data-type="<?php echo e($voice->voice_type); ?>"
-															data-gender="<?php echo e($voice->gender); ?>"	
+															data-type="<?php if($voice->vendor == 'elevenlabs'): ?> <?php echo e($voice->description); ?> <?php else: ?> <?php echo e($voice->voice_type); ?> <?php endif; ?>"
+															data-gender=<?php echo e($voice->gender); ?>	
 															data-voice="<?php echo e($voice->voice); ?>"	
 															data-url="<?php echo e(URL::asset($voice->sample_url)); ?>"																							
 															<?php if(auth()->user()->default_voiceover_voice == $voice->voice_id): ?> selected <?php endif; ?>
@@ -368,7 +367,7 @@
 							<div class="card-footer border-0 text-center mt-3">
 								<span id="processing"><img src="<?php echo e(URL::asset('/img/svgs/processing.svg')); ?>" alt=""></span>
 								<button type="button" class="btn btn-primary main-action-button mr-2" id="listen-text"><?php echo e(__('Listen')); ?></button>
-								<button type="submit" class="btn btn-primary main-action-button" id="synthesize-text"><?php echo e(__('Synthesize')); ?></button>								
+								<button type="button" class="btn btn-primary main-action-button" id="synthesize-text"><?php echo e(__('Synthesize')); ?></button>								
 							</div>							
 
 						</form>
@@ -408,6 +407,7 @@
 		</div>
 	</div>
 </div>
+
 <div class="modal fade" id="info-alert-model" tabindex="-1" aria-labelledby="exampleModalLabel" aria-modal="true" role="dialog">
   <div class="modal-dialog modal-dialog-centered modal-xl">
     <div class="modal-content">
@@ -439,12 +439,275 @@
 	<script src="<?php echo e(URL::asset('js/dashboard.js')); ?>"></script>
 	<script type="text/javascript">
 		$(function () {
+      $(document).ready(function(){
+        // DELETE SYNTHESIZE RESULT
+          $(document).on('click', '.deleteResultButton', function(e) {
 
+            e.preventDefault();
+
+            Swal.fire({
+              title: '<?php echo e(__('Confirm Result Deletion')); ?>',
+              text: '<?php echo e(__('It will permanently delete this synthesize result')); ?>',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: '<?php echo e(__('Delete')); ?>',
+              reverseButtons: true,
+            }).then((result) => {
+              if (result.isConfirmed) {
+                var formData = new FormData();
+                formData.append("id", $(this).attr('id'));
+                $.ajax({
+                  headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                  method: 'post',
+                  url: 'text-to-speech/delete',
+                  data: formData,
+                  processData: false,
+                  contentType: false,
+                  success: function (data) {
+                    if (data == 'success') {
+                      Swal.fire('<?php echo e(__('Result Deleted')); ?>', '<?php echo e(__('Synthesize result has been successfully deleted')); ?>', 'success');	
+                      $("#resultTable").DataTable().ajax.reload();								
+                    } else {
+                      Swal.fire('<?php echo e(__('Delete Failed')); ?>', '<?php echo e(__('There was an error while deleting this result')); ?>', 'error');
+                    }      
+                  },
+                  error: function(data) {
+                    Swal.fire({ type: 'error', title: 'Oops...', text: 'Something went wrong!' })
+                  }
+                })
+              } 
+            })
+          });
+
+
+          /*************************************************
+           *  Process File Synthesize Mode
+           *************************************************/
+          $('#synthesize-text').on('click',function(e) {
+
+            "use strict";
+
+            e.preventDefault()
+
+            let map = new Map();
+            let textarea = document.getElementsByTagName("textarea");
+            let full_textarea = textarea.length;
+            let full_text = '';
+
+            if (textarea.length == 1) {
+              let value = document.getElementById('ZZZOOOVVVZ').value;
+              let voice = document.getElementById('ZZZOOOVVVZ').getAttribute('data-voice');
+
+              if (value.length == 0) {
+                Swal.fire('<?php echo e(__('Missing Input Text')); ?>', '<?php echo e(__('Enter your text that you want to synthezise before processing')); ?>', 'warning');
+              } else if (value.length > text_length_limit) { 
+                Swal.fire('<?php echo e(__('Text to Speech Notification')); ?>', '<?php echo e(__('Text exceeded allowed length, maximum allowed text length is ')); ?>' + text_length_limit + '<?php echo e(__(' characters. Please decrease the overall text length.')); ?>', 'warning'); 
+              } else {
+                map.set(voice, value);
+                startSynthesizeMode(1, map, value);
+              }
+
+            } else {
+
+              for (let i = 0; i < textarea.length; i++) {
+
+                let value = textarea[i].value;
+                let voice = textarea[i].getAttribute('data-voice');
+                let distinct = generateID(3);
+                
+                if (value != '') {
+                  map.set(voice +'___'+ distinct, value);
+                  full_text +=value;
+                } else {
+                  full_textarea--;
+                }
+              }
+
+              if (full_text.length == 0) {
+                Swal.fire('<?php echo e(__('Missing Input Text')); ?>', '<?php echo e(__('Enter your text that you want to synthezise before processing')); ?>', 'warning');
+              } else if (full_text.length > text_length_limit) { 
+                Swal.fire('<?php echo e(__('Text to Speech Notification')); ?>', '<?php echo e(__('Text exceeded allowed length, maximum allowed total text length is ')); ?>' + text_length_limit + '<?php echo e(__(' characters. Please decrease the text length.')); ?>', 'warning'); 
+              } else {
+                startSynthesizeMode(full_textarea, map, full_text);
+              }    
+            }
+          });
+
+
+          /*************************************************
+           *  Process Live Synthesize Listen Mode
+           *************************************************/
+          $('#listen-text').on('click', function(e) {
+
+            "use strict";
+
+            e.preventDefault()
+
+            let map = new Map();
+            let textarea = document.getElementsByTagName("textarea");
+            let full_textarea = textarea.length;
+            let full_text = '';
+
+            if (textarea.length == 1) {
+              let value = document.getElementById('ZZZOOOVVVZ').value;
+              let voice = document.getElementById('ZZZOOOVVVZ').getAttribute('data-voice');
+
+              if (value.length == 0) {
+                Swal.fire('<?php echo e(__('Missing Input Text')); ?>', '<?php echo e(__('Enter your text that you want to synthezise before processing')); ?>', 'warning');
+              } else if (value.length > text_length_limit) { 
+                Swal.fire('<?php echo e(__('Text to Speech Notification')); ?>', '<?php echo e(__('Text exceeded allowed length, maximum allowed text length is ')); ?>' + text_length_limit + '<?php echo e(__(' characters. Please decrease the text length.')); ?>', 'warning'); 
+              } else {
+                map.set(voice, value);
+                startListenMode(1, map, value);
+              }
+
+            } else {
+
+              for (let i = 0; i < textarea.length; i++) {
+
+                let value = textarea[i].value;
+                let voice = textarea[i].getAttribute('data-voice');
+                let distinct = generateID(3);
+                
+                if (value != '') {
+                  map.set(voice +'___'+ distinct, value);
+                  full_text +=value;
+                } else {
+                  full_textarea--;
+                }
+              }
+
+              if (full_text.length == 0) {
+                Swal.fire('<?php echo e(__('Missing Input Text')); ?>', '<?php echo e(__('Enter your text that you want to synthezise before processing')); ?>', 'warning');
+              } else if (full_text.length > text_length_limit) { 
+                Swal.fire('<?php echo e(__('Text to Speech Notification')); ?>', '<?php echo e(__('Text exceeded allowed length, maximum allowed total text length is ')); ?>' + text_length_limit + '<?php echo e(__(' characters. Please decrease the overall text length.')); ?>', 'warning'); 
+              } else {
+                startListenMode(full_textarea, map, full_text);
+              }    
+            }
+          });
+
+          	$('#add-project').on('click', function() {
+              $('#projectModal').modal('show');
+            });
+
+            	var table = $('#resultTable').DataTable({
+                "lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
+                responsive: {
+                  details: {type: 'column'}
+                },
+                colReorder: true,
+                language: {
+                  "emptyTable": "<div><img id='no-results-img' src='<?php echo e(URL::asset('img/files/no-result.png')); ?>'><br><?php echo e(__('No synthesized text results yet')); ?></div>",
+                  "info": "<?php echo e(__('Showing page')); ?> _PAGE_ <?php echo e(__('of')); ?> _PAGES_",
+                  search: "<i class='fa fa-search search-icon'></i>",
+                  lengthMenu: '_MENU_ ',
+                  paginate : {
+                    first    : '<i class="fa fa-angle-double-left"></i>',
+                    last     : '<i class="fa fa-angle-double-right"></i>',
+                    previous : '<i class="fa fa-angle-left"></i>',
+                    next     : '<i class="fa fa-angle-right"></i>'
+                  }
+                },
+                pagingType : 'full_numbers',
+                processing: true,
+                serverSide: true,
+                ajax: "<?php echo e(route('user.voiceover')); ?>",
+                columns: [{
+                    "className":      'details-control',
+                    "orderable":      false,
+                    "searchable":     false,
+                    "data":           null,
+                    "defaultContent": ''
+                  },
+                  {
+                    data: 'created-on',
+                    name: 'created-on',
+                    orderable: true,
+                    searchable: true
+                  },																		
+                  {
+                    data: 'custom-language',
+                    name: 'custom-language',
+                    orderable: true,
+                    searchable: true
+                  },
+                  {
+                    data: 'voice',
+                    name: 'voice',
+                    orderable: true,
+                    searchable: true
+                  },
+                  {
+                    data: 'gender',
+                    name: 'gender',
+                    orderable: true,
+                    searchable: true
+                  },	
+                  {
+                    data: 'single',
+                    name: 'single',
+                    orderable: true,
+                    searchable: true
+                  },				
+                  {
+                    data: 'download',
+                    name: 'download',
+                    orderable: true,
+                    searchable: true
+                  },	
+                  {
+                    data: 'result_ext',
+                    name: 'result_ext',
+                    orderable: true,
+                    searchable: true
+                  },		
+                  {
+                    data: 'characters',
+                    name: 'characters',
+                    orderable: true,
+                    searchable: true
+                  },	
+                  {
+                    data: 'project',
+                    name: 'project',
+                    orderable: true,
+                    searchable: true
+                  },				
+                  {
+                    data: 'actions',
+                    name: 'actions',
+                    orderable: false,
+                    searchable: false
+                  },
+                ]
+              });
+			
+
+          $('#resultTable tbody').on('click', 'td.details-control', function () {
+            var tr = $(this).closest('tr');
+            var row = table.row( tr );
+        
+            if ( row.child.isShown() ) {
+              // This row is already open - close it
+              $('div.slider', row.child()).slideUp( function () {
+                row.child.hide();
+                tr.removeClass('shown');
+              } );
+            }
+            else {
+              // Open this row
+              row.child( format(row.data()), 'no-padding' ).show();
+              tr.addClass('shown');
+        
+              $('div.slider', row.child()).slideDown();
+            }
+          });
+
+      });  
 			"use strict";
 
-			$('#add-project').on('click', function() {
-				$('#projectModal').modal('show');
-			});
+		
 			
 			function format(d) {
 				// `d` is the original data object for the row
@@ -473,163 +736,128 @@
 			}
 
 
-			var table = $('#resultTable').DataTable({
-				"lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
-				responsive: {
-					details: {type: 'column'}
-				},
-				colReorder: true,
-				language: {
-					"emptyTable": "<div><img id='no-results-img' src='<?php echo e(URL::asset('img/files/no-result.png')); ?>'><br><?php echo e(__('No synthesized text results yet')); ?></div>",
-					search: "<i class='fa fa-search search-icon'></i>",
-					lengthMenu: '_MENU_ ',
-					paginate : {
-						first    : '<i class="fa fa-angle-double-left"></i>',
-						last     : '<i class="fa fa-angle-double-right"></i>',
-						previous : '<i class="fa fa-angle-left"></i>',
-						next     : '<i class="fa fa-angle-right"></i>'
-					}
-				},
-				pagingType : 'full_numbers',
-				processing: true,
-				serverSide: true,
-				ajax: "<?php echo e(route('user.voiceover')); ?>",
-				columns: [{
-						"className":      'details-control',
-						"orderable":      false,
-						"searchable":     false,
-						"data":           null,
-						"defaultContent": ''
-					},
-					{
-						data: 'created-on',
-						name: 'created-on',
-						orderable: true,
-						searchable: true
-					},																		
-					{
-						data: 'custom-language',
-						name: 'custom-language',
-						orderable: true,
-						searchable: true
-					},
-					{
-						data: 'voice',
-						name: 'voice',
-						orderable: true,
-						searchable: true
-					},
-					{
-						data: 'gender',
-						name: 'gender',
-						orderable: true,
-						searchable: true
-					},	
-					{
-						data: 'single',
-						name: 'single',
-						orderable: true,
-						searchable: true
-					},				
-					{
-						data: 'download',
-						name: 'download',
-						orderable: true,
-						searchable: true
-					},	
-					{
-						data: 'result_ext',
-						name: 'result_ext',
-						orderable: true,
-						searchable: true
-					},		
-					{
-						data: 'characters',
-						name: 'characters',
-						orderable: true,
-						searchable: true
-					},	
-					{
-						data: 'project',
-						name: 'project',
-						orderable: true,
-						searchable: true
-					},				
-					{
-						data: 'actions',
-						name: 'actions',
-						orderable: false,
-						searchable: false
-					},
-				]
-			});
-			
-
-			$('#resultTable tbody').on('click', 'td.details-control', function () {
-				var tr = $(this).closest('tr');
-				var row = table.row( tr );
 		
-				if ( row.child.isShown() ) {
-					// This row is already open - close it
-					$('div.slider', row.child()).slideUp( function () {
-						row.child.hide();
-						tr.removeClass('shown');
-					} );
-				}
-				else {
-					// Open this row
-					row.child( format(row.data()), 'no-padding' ).show();
-					tr.addClass('shown');
-		
-					$('div.slider', row.child()).slideDown();
-				}
-			});
-
 
 			let user_voice = "<?php echo e(auth()->user()->default_voiceover_voice); ?>";
-			voice_select(user_voice);
+			if (user_voice) {
+				voice_select(user_voice);
+			}
+			
 
 
-			// DELETE SYNTHESIZE RESULT
-			$(document).on('click', '.deleteResultButton', function(e) {
+			
 
-				e.preventDefault();
+		});	
+		
+		
+		/*===========================================================================
+		*
+		*  Listen Row 
+		*
+		*============================================================================*/
+		function listenRow(row) {
 
-				Swal.fire({
-					title: '<?php echo e(__('Confirm Result Deletion')); ?>',
-					text: '<?php echo e(__('It will permanently delete this synthesize result')); ?>',
-					icon: 'warning',
-					showCancelButton: true,
-					confirmButtonText: '<?php echo e(__('Delete')); ?>',
-					reverseButtons: true,
-				}).then((result) => {
-					if (result.isConfirmed) {
-						var formData = new FormData();
-						formData.append("id", $(this).attr('id'));
-						$.ajax({
-							headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-							method: 'post',
-							url: 'text-to-speech/delete',
-							data: formData,
-							processData: false,
-							contentType: false,
-							success: function (data) {
-								if (data == 'success') {
-									Swal.fire('<?php echo e(__('Result Deleted')); ?>', '<?php echo e(__('Synthesize result has been successfully deleted')); ?>', 'success');	
-									$("#resultTable").DataTable().ajax.reload();								
-								} else {
-									Swal.fire('<?php echo e(__('Delete Failed')); ?>', '<?php echo e(__('There was an error while deleting this result')); ?>', 'error');
-								}      
-							},
-							error: function(data) {
-								Swal.fire({ type: 'error', title: 'Oops...', text: 'Something went wrong!' })
-							}
-						})
-					} 
+			let id = row.id;
+			id = id.slice(0, -1);
+
+			let text = document.getElementById(id + 'Z');
+			let voice = text.getAttribute('data-voice');
+			let format = document.querySelector('input[name="format"]:checked').value;
+
+			if (text.value == '') {    
+				Swal.fire('<?php echo e(__('Text to Speech Notification')); ?>', '<?php echo e(__('Please enter text to synthesize first')); ?>', 'warning');    
+			} else if (text.value.length > text_length_limit) { 
+				Swal.fire('<?php echo e(__('Text to Speech Notification')); ?>', '<?php echo e(__('Text exceeded allowed length, maximum allowed text length is ')); ?>' + text_length_limit + '<?php echo e(__(' characters. Please decrease the text length.')); ?>', 'warning'); 
+			} else {
+
+				let selected_text = "";
+				if (window.getSelection) {
+					selected_text = window.getSelection().toString();
+				} else if (document.selection && document.selection.type != "Control") {
+					selected_text = document.selection.createRange().selected_text;
+				}
+
+				$.ajax({
+					headers: {
+						'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+					},
+					type: "POST",
+					url: 'text-to-speech/listen-row',
+					data: { row_text:text.value, voice:voice, selected_text:selected_text, format:format, selected_text_length:selected_text.length},
+					beforeSend: function() {
+						$('#' + row.id).html('<i class="fa-solid fa-waveform-lines"></i>');
+						$('#' + row.id).prop('disabled', true);         
+						$('#waveform-box').slideUp('slow')   
+					},
+					complete: function() {
+						$('#' + row.id).prop('disabled', false);
+						$('#' + row.id).html('<i class="fa-solid fa-message-music"></i>');              
+					},
+					success: function(data) {
+						animateValue("balance-number", data['old'], data['current'], 2000);
+						$('#waveform-box').slideDown('slow')
+					},
+					error: function(data) {
+						if (data.responseJSON['error']) {
+							Swal.fire('<?php echo e(__('Text to Speech Notification')); ?>', data.responseJSON['error'], 'warning');
+						}
+
+						$('#' + row.id).prop('disabled', false);
+						$('#' + row.id).html('<i class="fa-solid fa-message-music"></i>');    
+						$('#waveform-box').slideUp('slow')            
+					}
+				}).done(function(data) {
+
+					let download = document.getElementById('downloadBtn');
+
+					if (download) {
+						document.getElementById('downloadBtn').href = data['url'];
+					}
+					
+					wavesurfer.load(data['url']);
+
+					wavesurfer.on('ready',     
+						wavesurfer.play.bind(wavesurfer),
+						playBtn.innerHTML = '<i class="fa fa-pause"></i>',
+						playBtn.classList.add('isPlaying'),
+					);
 				})
-			});
+			}
 
-		});		
+		}
+
+
+		function deleteRow(row) {
+			let id = row.id;
+
+			if(id != 'ZZZOOOVVVDEL') {
+				id = id.slice(0, -3);
+				$('#' + id).remove();
+				total_rows--;
+				countCharacters();
+
+			} else {
+				let main_img = document.getElementById('ZZZOOOVVVIMG');
+				main_img.setAttribute('src', textarea_img);
+
+				let main_voice = document.getElementById('ZZZOOOVVVZ');
+				main_voice.setAttribute('data-voice', textarea_voice_id);
+
+				let instance = tippy(document.getElementById('ZZZOOOVVVIMG'));
+				instance.setProps({
+					animation: 'scale-extreme',
+					theme: 'material',
+					content: textarea_voice_details,
+				});
+
+				main_voice.value = "";
+				if (total_rows == 1) {
+					$('#total-characters').text('0 characters, 1 line');
+				}
+
+				Swal.fire('<?php echo e(__('Main Text Line')); ?>', '<?php echo e(__('Main text line cannot be deleted, line voice will change to the main selected one')); ?>', 'warning');
+			}
+		}
 	</script>
 <?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /home/customer/www/staging.paraclete.ai/public_html/resources/views/user/voiceover/index.blade.php ENDPATH**/ ?>

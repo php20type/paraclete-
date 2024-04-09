@@ -70,7 +70,12 @@
 						</div>
 					</div>
 					<div>						
-						<div id="template-textarea" class="pl-4 pr-4">						
+						<div id="template-textarea" class="pl-4 pr-4">		
+							@if (!is_null($id->image))
+							<div class="text-center mb-5 mt-2">
+								<img src="{{ $id->image }}" style="height: 300px; border-radius: 10px;" alt="AI Article Wizard Image">
+							</div>								
+							@endif				
 							<div class="form-control" name="content" rows="12" id="richtext">{!! $id->result_text !!}</div>
 							@error('content')
 								<p class="text-danger">{{ $errors->first('content') }}</p>

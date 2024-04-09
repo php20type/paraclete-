@@ -1,6 +1,5 @@
 @extends('layouts.app')
 @section('css')
-
 <style>
  	.list-item {
       	display: flex;
@@ -40,7 +39,6 @@
 		flex: 1;
 		margin-right: 10px;
 	}
-
 	.add_templates-sec .list-item {
 		background-color: #f2f2f2;
 		border-color: rgba(0, 123, 255, 0.4);
@@ -59,6 +57,7 @@
 	}
 </style>
 @endsection
+
 @section('page-header')
 	<!-- PAGE HEADER -->
 	<div class="page-header mt-5-7"> 
@@ -77,7 +76,7 @@
 
 @section('content')						
 	<div class="row">
-		<div class="col-lg-6 col-md-12 col-xm-12">
+		<div class="col-lg-8 col-md-12 col-xm-12">
 			<div class="card border-0">
 				<div class="card-header">
 					<h3 class="card-title">{{ __('Create New Chat Bot') }}</h3>
@@ -87,7 +86,7 @@
 						@csrf
 					  
 						<div class="row">
-					  
+					  	  	
 						  <div class="col-sm-12 col-md-12">
 							<div class="input-box">
 							  <label class="form-label fs-12">{{ __('Select Avatar') }} </label>
@@ -121,7 +120,7 @@
 								</label>
 							</div>   
 						</div> 
-
+					  
 						<div class="col-md-12 col-sm-12 mt-2 mb-4 pl-0">
 						  <div class="form-group">
 							<label class="custom-switch">
@@ -157,10 +156,10 @@
 							</div> 
 						  </div>
 					  
-						  <div class="col-md-12 col-sm-12">
+						  <div class="col-md-6 col-sm-12">
 							<div class="input-box">
 							  <h6>{{ __('Chat Bot Category') }} <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
-							  <select id="chats" name="category" data-placeholder="{{ __('Set AI Chat Bot Category') }}">
+							  <select id="chats" name="category" class="form-control">
 								<option value="all">{{ __('All') }}</option>
 								<option value="free" >{{ __('Free Chat Bot') }}</option>																																											
 								<option value="standard"> {{ __('Standard Chat Bot') }}</option>
@@ -169,6 +168,43 @@
 							  </select>
 							</div>
 						  </div>
+
+						  <div class="col-md-6 col-sm-12">
+							<div class="input-box">
+							  <h6>{{ __('Chat Group') }} <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+							  <select id="group" name="group" class="form-control">
+								@foreach ($categories as $category)
+									<option value="{{ $category->code }}">{{ __($category->name) }}</option>
+								@endforeach																																																													
+							  </select>
+							</div>
+						  </div>
+
+						    <div class="col-sm-12">								
+								<div class="input-box add_templates-sec">								
+								<h6 class="fs-11 mb-2 font-weight-semibold">{{ __('Templates') }} <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+								<div class="form-group">
+									@if(isset($templates))
+									<select name="templates[]" multiple>
+										
+										@foreach ($templates as $template)
+											<option value="{{ $template->id }}">{{ $template->name }}</option>
+										@endforeach
+									</select>
+									@endif
+								</div> 
+									<div class="form-group">
+										<div class="form-input">
+											<input type="text" name="template_name" id="template_name">
+											<input type="hidden" name="dataArrayField" id="dataArrayField">
+											<button type="button" id="addTemplateBtn" class="btn btn-primary">Add</button>
+										</div>
+									</div>
+									<!-- Button to add a new template -->
+									
+									<div id="output" class="output_dropdown"></div>
+								</div> 
+						  	</div>
 					  
 						  <div class="col-sm-12">								
 							<div class="input-box">								
@@ -196,37 +232,7 @@
 							</div> 
 						  </div>
 						</div>
-
-
-						  <div class="col-sm-12">								
-							<div class="input-box add_templates-sec">								
-							  <h6 class="fs-11 mb-2 font-weight-semibold">{{ __('Templates') }} <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
-							  <div class="form-group">
-							  	@if(isset($templates))
-								<select name="templates[]" multiple>
-									
-									@foreach ($templates as $template)
-										<option value="{{ $template->id }}">{{ $template->name }}</option>
-									@endforeach
-								</select>
-								@endif
-							  </div> 
-
-								<div class="form-group">
-									 <div class="form-input">
-										<input type="text" name="template_name" id="template_name">
-										<input type="hidden" name="dataArrayField" id="dataArrayField">
-										<button type="button" id="addTemplateBtn" class="btn btn-primary">Add</button>
-									</div>
-								</div>
-
-								<!-- Button to add a new template -->
-								
-								<div id="output" class="output_dropdown"></div>
-
-							</div> 
-						  </div>
-
+					  
 						<div class="modal-footer d-inline">
 						  <div class="row text-center">
 							<div class="col-md-12">
@@ -271,7 +277,6 @@
 			// 		Swal.fire({ type: 'error', title: 'Oops...', text: 'Something went wrong!' })
 			// 	}
 			// })
-
 		});	
 		function updateOutput() {
 			$('#output').empty();
@@ -281,14 +286,11 @@
 								'<div class="list-item-text">' + dataArray[i] + '</div>' +
 								'<div class="close-button"><i class="fa-solid fa-circle-xmark"></i></div>' +
 								'</div>');
-
 				// Attach a click event to the close button
 				listItem.find('.close-button').click(createCloseHandler(i));
-
 				$('#output').append(listItem);
 			}
 			}
-
 			function createCloseHandler(index) {
 			return function() {
 				dataArray.splice(index, 1);

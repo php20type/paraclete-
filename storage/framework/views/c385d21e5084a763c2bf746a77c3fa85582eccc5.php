@@ -1,3 +1,5 @@
+
+
 <?php $__env->startSection('page-header'); ?>
 	<!-- PAGE HEADER -->
 	<div class="page-header mt-5-7"> 
@@ -31,6 +33,7 @@
 									<h6><?php echo e(__('Plan Status')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
 									<select id="plan-status" name="plan-status" class="form-select" data-placeholder="<?php echo e(__('Select Plan Status')); ?>:">			
 										<option value="active" selected><?php echo e(__('Active')); ?></option>
+										<option value="hidden"><?php echo e(__('Hidden')); ?></option>
 										<option value="closed"><?php echo e(__('Closed')); ?></option>
 									</select>
 									<?php $__errorArgs = ['plan-status'];
@@ -140,6 +143,25 @@ if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?>
 										<p class="text-danger"><?php echo e($errors->first('free-plan')); ?></p>
+									<?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+								</div> 						
+							</div>
+
+							<div class="col-lg-6 col-md-6 col-sm-12">							
+								<div class="input-box">								
+									<h6><?php echo e(__('Free Plan Days')); ?></h6>
+									<div class="form-group">							    
+										<input type="number" class="form-control" id="days" name="days" min=0 value="<?php echo e(old('days')); ?>">
+									</div> 
+									<?php $__errorArgs = ['days'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+										<p class="text-danger"><?php echo e($errors->first('days')); ?></p>
 									<?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
@@ -280,7 +302,7 @@ unset($__errorArgs, $__bag); ?>
 											<h6><?php echo e(__('Words included in the Plan')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span> <span class="text-muted ml-3">(<?php echo e(__('Renewed Monthly')); ?>)</span></h6>
 											<div class="form-group">							    
 												<input type="number" class="form-control" id="words" name="words" value="<?php echo e(old('words')); ?>" required>
-												<span class="text-muted fs-10"><?php echo e(__('Each text generation task will count total input by user and output words by openai')); ?></span>
+												<span class="text-muted fs-10"><?php echo e(__('Each text generation task counts output words created')); ?>. <?php echo e(__('Set as -1 for unlimited words')); ?>.</span>
 											</div> 
 											<?php $__errorArgs = ['words'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -300,7 +322,7 @@ unset($__errorArgs, $__bag); ?>
 											<h6><?php echo e(__('Images included in the Plan')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span> <span class="text-muted ml-3">(<?php echo e(__('Renewed Monthly')); ?>)</span></h6>
 											<div class="form-group">							    
 												<input type="number" class="form-control" id="images" name="images" value="<?php echo e(old('images')); ?>" required>
-												<span class="text-muted fs-10"><?php echo e(__('Valid for all image sizes')); ?></span>
+												<span class="text-muted fs-10"><?php echo e(__('Valid for all image sizes')); ?>. <?php echo e(__('Set as -1 for unlimited images')); ?>.</span>
 											</div> 
 											<?php $__errorArgs = ['images'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -320,7 +342,7 @@ unset($__errorArgs, $__bag); ?>
 											<h6><?php echo e(__('Characters included in the Plan')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span> <span class="text-muted ml-3">(<?php echo e(__('Renewed Monthly')); ?>)</span></h6>
 											<div class="form-group">							    
 												<input type="number" class="form-control" id="characters" name="characters" value="<?php echo e(old('characters')); ?>" required>
-												<span class="text-muted fs-10"><?php echo e(__('For AI Voiceover feature')); ?></span>
+												<span class="text-muted fs-10"><?php echo e(__('For AI Voiceover feature')); ?>. <?php echo e(__('Set as -1 for unlimited characters')); ?>.</span>
 											</div> 
 											<?php $__errorArgs = ['characters'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -340,7 +362,7 @@ unset($__errorArgs, $__bag); ?>
 											<h6><?php echo e(__('Minutes included in the Plan')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span> <span class="text-muted ml-3">(<?php echo e(__('Renewed Monthly')); ?>)</span></h6>
 											<div class="form-group">							    
 												<input type="number" class="form-control" id="minutes" name="minutes" value="<?php echo e(old('minutes')); ?>" required>
-												<span class="text-muted fs-10"><?php echo e(__('For AI Speech to Text feature')); ?></span>
+												<span class="text-muted fs-10"><?php echo e(__('For AI Speech to Text feature')); ?>. <?php echo e(__('Set as -1 for unlimited minutes')); ?>.</span>
 											</div> 
 											<?php $__errorArgs = ['minutes'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -358,15 +380,16 @@ unset($__errorArgs, $__bag); ?>
 									<div class="col-lg-6 col-md-6 col-sm-12">
 										<div class="input-box">
 											<h6><?php echo e(__('OpenAI Model for All Template Results')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
-											<select id="default-model-user" name="model" class="form-select" data-placeholder="<?php echo e(__('Select OpenAI Model Type')); ?>:">			
-												<option value="text-ada-001" selected><?php echo e(__('Ada')); ?> (<?php echo e(__('GPT 3')); ?>)</option>
-												<option value="text-babbage-001"><?php echo e(__('Babbage')); ?> (<?php echo e(__('GPT 3')); ?>)</option>
-												<option value="text-curie-001"><?php echo e(__('Curie')); ?> (<?php echo e(__('GPT 3')); ?>)</option>
-												<option value="text-davinci-003"><?php echo e(__('Davinci')); ?> (<?php echo e(__('GPT 3')); ?>)</option>
+											<select id="default-model-user" name="model" class="form-select" data-placeholder="<?php echo e(__('Select OpenAI Model Type')); ?>:">								
 												<option value="gpt-3.5-turbo"><?php echo e(__('GPT 3.5 Turbo')); ?></option>
 												<option value="gpt-3.5-turbo-16k"><?php echo e(__('GPT 3.5 Turbo')); ?> (<?php echo e(__('16K')); ?>)</option>
 												<option value="gpt-4"><?php echo e(__('GPT 4')); ?> (<?php echo e(__('8K')); ?>)</option>
 												<option value="gpt-4-32k"><?php echo e(__('GPT 4')); ?> (<?php echo e(__('32K')); ?>)</option>
+												<option value="gpt-4-1106-preview"><?php echo e(__('GPT 4 Turbo')); ?> (<?php echo e(__('Preview')); ?>)</option>
+												<option value="gpt-4-vision-preview"><?php echo e(__('GPT 4 Turbo with Vision')); ?> (<?php echo e(__('Preview')); ?>)</option>
+												<?php $__currentLoopData = $models; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $model): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+													<option value="<?php echo e($model->model); ?>"><?php echo e($model->description); ?> (Fine Tune Model)</option>
+												<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 											</select>
 										</div>
 									</div>
@@ -378,6 +401,11 @@ unset($__errorArgs, $__bag); ?>
 												<option value="gpt-3.5-turbo" selected><?php echo e(__('GPT 3.5 Turbo')); ?></option>
 												<option value="gpt-3.5-turbo-16k"><?php echo e(__('GPT 3.5 Turbo')); ?> (<?php echo e(__('16K')); ?>)</option>
 												<option value="gpt-4"><?php echo e(__('GPT 4')); ?> (<?php echo e(__('8K')); ?>)</option>
+												<option value="gpt-4-1106-preview"><?php echo e(__('GPT 4 Turbo')); ?> (<?php echo e(__('Preview')); ?>)</option>
+												<option value="gpt-4-vision-preview"><?php echo e(__('GPT 4 Turbo with Vision')); ?> (<?php echo e(__('Preview')); ?>)</option>
+												<?php $__currentLoopData = $models; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $model): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+													<option value="<?php echo e($model->model); ?>"><?php echo e($model->description); ?> (Fine Tune Model)</option>
+												<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 											</select>
 										</div>
 									</div>
@@ -479,8 +507,113 @@ unset($__errorArgs, $__bag); ?>
 
 									<div class="col-lg-6 col-md-6 col-sm-12">
 										<div class="input-box">
-											<h6><?php echo e(__('Smart Ads')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<h6><?php echo e(__('Smart Ads Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
 											<select id="smart_ads_feature" name="smart_ads_feature" class="form-select" data-placeholder="<?php echo e(__('Allow/Deny Smart Ads Feature Usage')); ?>">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('Automation Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="automation_feature" name="automation_feature" class="form-select" data-placeholder="<?php echo e(__('Allow/Deny Automation Feature Usage')); ?>">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('Personal OpenAI API Usage Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="personal-openai-api" name="personal-openai-api" class="form-select">
+												<option value=1><?php echo e(__('Allow')); ?></option>
+												<option value=0 selected><?php echo e(__('Deny')); ?></option>																																																																																																								
+											</select>
+										</div>
+									</div>
+		
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('Personal Stable Diffusion API Usage Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="personal-sd-api" name="personal-sd-api" class="form-select">
+												<option value=1><?php echo e(__('Allow')); ?></option>
+												<option value=0 selected><?php echo e(__('Deny')); ?></option>																																																																																																								
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('OpenAI Image Engine')); ?> <i class="ml-3 text-dark fs-13 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Make sure that AI Image Feature is Enabled first and also that this AI Image vendor is enabled in your Davinci Settings page')); ?>."></i></h6>
+											<select id="dalle-image-engine" name="dalle-image-engine" class="form-select">
+												<option value='none' selected><?php echo e(__('Not Allowed')); ?></option>
+												<option value='dall-e-2'><?php echo e(__('Dalle 2')); ?></option>
+												<option value='dall-e-3'> <?php echo e(__('Dalle 3')); ?></option>																															
+												<option value='dall-e-3-hd'> <?php echo e(__('Dalle 3 HD')); ?></option>																																																															
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('Stable Diffusion Image Engine')); ?> <i class="ml-3 text-dark fs-13 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Make sure that AI Image Feature is Enabled first and also that this AI Image vendor is enabled in your Davinci Settings page')); ?>."></i></h6>
+											<select id="sd-image-engine" name="sd-image-engine" class="form-select">
+												<option value='none' selected><?php echo e(__('Not Allowed')); ?></option>	
+												<option value='stable-diffusion-v1-6'><?php echo e(__('Stable Diffusion v1.6')); ?></option>																															
+												<option value='stable-diffusion-xl-beta-v2-2-2'> <?php echo e(__('Stable Diffusion v2.2.2-XL Beta')); ?></option>																															
+												<option value='stable-diffusion-xl-1024-v0-9'> <?php echo e(__('SDXL v0.9')); ?></option>																															
+												<option value='stable-diffusion-xl-1024-v1-0'> <?php echo e(__('SDXL v1.0')); ?></option>																																																														
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('AI Article Wizard Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="wizard-feature" name="wizard-feature" class="form-select">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>																															
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('AI Vision Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="vision-feature" name="vision-feature" class="form-select">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>																															
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('AI Chat Image Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="chat-image-feature" name="chat-image-feature" class="form-select">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>																															
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('AI Chat PDF Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="chat-pdf-feature" name="chat-pdf-feature" class="form-select">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>																															
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('Internet Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="internet-feature" name="internet-feature" class="form-select">
 												<option value=1 selected><?php echo e(__('Allow')); ?></option>
 												<option value=0> <?php echo e(__('Deny')); ?></option>																															
 											</select>
@@ -491,7 +624,7 @@ unset($__errorArgs, $__bag); ?>
 										<div class="input-box">								
 											<h6><?php echo e(__('Number of Team Members')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span><i class="ml-3 text-dark fs-13 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Define how many team members a user is allowed to create under this subscription plan')); ?>."></i></h6>
 											<div class="form-group">							    
-												<input type="number" class="form-control" id="team-members" name="team-members" value="<?php echo e(old('team-members')); ?>" required>
+												<input type="number" class="form-control" id="team-members" name="team-members" min=0 value="<?php echo e(old('team-members')); ?>" required>
 											</div> 
 											<?php $__errorArgs = ['team-members'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -499,6 +632,86 @@ if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?>
 												<p class="text-danger"><?php echo e($errors->first('team-members')); ?></p>
+											<?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+										</div> 						
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('AI Web Chat Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="chat-web-feature" name="chat-web-feature" class="form-select">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>																															
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('AI Chat CSV Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="chat-csv-feature" name="chat-csv-feature" class="form-select">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>																															
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('Smart Editor Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="smart-editor-feature" name="smart-editor-feature" class="form-select">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>																															
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">
+										<div class="input-box">
+											<h6><?php echo e(__('AI Rewriter Feature')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
+											<select id="rewriter-feature" name="rewriter-feature" class="form-select">
+												<option value=1 selected><?php echo e(__('Allow')); ?></option>
+												<option value=0> <?php echo e(__('Deny')); ?></option>																															
+											</select>
+										</div>
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">							
+										<div class="input-box">								
+											<h6><?php echo e(__('Maximum Allowed CSV File Size')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span><i class="ml-3 text-dark fs-13 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Set the maximum CSV file size limit that subscriber is allowed to process')); ?>."></i></h6>
+											<div class="form-group">							    
+												<input type="number" class="form-control" min="1" id="chat-csv-file-size" name="chat-csv-file-size" min=0 value="<?php echo e(old('chat-csv-file-size')); ?>">
+												<span class="text-muted fs-10"><?php echo e(__('Maximum Size limit is in Megabytes (MB)')); ?>.</span>
+											</div> 
+											<?php $__errorArgs = ['chat-csv-file-size'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+												<p class="text-danger"><?php echo e($errors->first('chat-csv-file-size')); ?></p>
+											<?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+										</div> 						
+									</div>
+
+									<div class="col-lg-6 col-md-6 col-sm-12">							
+										<div class="input-box">								
+											<h6><?php echo e(__('Maximum Allowed PDF File Size')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span><i class="ml-3 text-dark fs-13 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Set the maximum PDF file size limit that subscriber is allowed to process')); ?>."></i></h6>
+											<div class="form-group">							    
+												<input type="number" class="form-control" min="1" id="chat-pdf-file-size" name="chat-pdf-file-size" min=0 value="<?php echo e(old('chat-pdf-file-size')); ?>">
+												<span class="text-muted fs-10"><?php echo e(__('Maximum Size limit is in Megabytes (MB)')); ?>.</span>
+											</div> 
+											<?php $__errorArgs = ['chat-pdf-file-size'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+												<p class="text-danger"><?php echo e($errors->first('chat-pdf-file-size')); ?></p>
 											<?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;

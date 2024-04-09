@@ -146,12 +146,6 @@
         display: block!important;
     }
 
-    #export-txt,
-    #export-word,
-    #export-pdf {
-        display: none;
-    }
-
     .chat-sidebar-container .extend {
 		left: 0!important;
         transition: all .5s ease!important;
@@ -174,6 +168,121 @@
 
     #template-buttons-group {
         margin-top: 0.5rem;
+    }
+
+    .chat-main-container {
+        max-height: max-content;
+    }
+
+    .chat-controllers {
+        display: block;
+
+        #message {
+            margin-bottom: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .chat-button-box {
+            display: inline-flex;
+            margin-right: 1rem;
+        }
+
+        .upload-button-nonresponsive {
+            display: none;
+        }
+
+        .upload-button-responsive {
+            display: inline-flex;
+        }
+
+        #chat-button {
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            margin-right: 0;
+        }
+
+        .no-margin-right {
+            margin-right: 0;
+        }
+    }
+
+    #chat-system {
+        .card-footer {
+            text-align: center;
+        }
+    }
+
+    .wizard-nav .wizard-nav-inner .wizard-nav-text .wizard-step-number {
+        display: none;
+    }
+
+    .wizard-nav .wizard-nav-inner .wizard-nav-text .wizard-step-title .wizard-step-title-number {
+        display: none;
+    }
+
+    .wizard-nav .wizard-nav-inner .wizard-nav-text .responsive {
+        padding-top: 0.6rem;
+    }
+
+    #wizard-results-wrapper {
+        margin-left: 0;
+    }
+
+    #new-wizard {
+        right: 0.9rem;
+        top: -80%;
+    }
+
+    #template-textarea {
+        margin-top: 2.5rem;
+    }
+
+    .chat-sidebar-container-special {
+        width: 300px !important;
+    }
+
+    .responsive-chat-web {
+        width: 10%!important;
+    }
+
+    .smart-header .go-back {
+        margin-top: 0.7rem!important;
+        margin-bottom: 0!important;
+        margin-left: 0px!important;
+    }
+
+    .smart-header #balance {
+        display: none!important;
+    }
+
+    #main-templates-container {
+        margin-top: 0;
+    }
+
+    .smart-article-editor .tox-tinymce {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .smart-article-editor .tox-edit-area {
+        margin: 25px 15px !important;
+    }
+
+    .responsive-left-column,
+    .responsive-right-column {
+        width: 0%!important;
+    }
+
+    #meta-container-editor {
+        position: fixed;
+        right: auto;
+    }
+
+    #show-left-menu,
+    #show-right-menu,
+    #hide-right-menu,
+    #hide-left-menu {
+        display: block;
     }
 
 }
@@ -544,4 +653,34 @@
         margin-right: 0px !important;
         margin-left: 0px !important;
     }
+  }
+
+  @media screen and (max-width: 940px) { 
+    #main-settings-toggle-minimized {
+        display: block!important;
+    }
+
+    #style-button {
+        display: none;
+    }
+
+    .hide-all {
+        display: none!important;
+    }
+    
+    .show-all {
+        display: block!important;
+    }
+
+    .image-prompt-wrapper .image-prompt .input-box {
+        width: 95%;
+    }
+
+    .image-prompt-wrapper .image-prompt #image-generate {
+        padding-left: 0;
+        padding-right: 0;
+        min-width: 130px;
+        font-size: 12px;
+    }
+
   }

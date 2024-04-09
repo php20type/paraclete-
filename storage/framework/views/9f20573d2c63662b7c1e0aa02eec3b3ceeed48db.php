@@ -32,35 +32,41 @@
 						<h6 class="font-weight-bold fs-12"><?php echo e(auth()->user()->job_role); ?></h6>
 					</div>
 				</div>
-				<div class="card-footer p-0">
-					<div class="row">
-						<div class="col-sm-12">
-							<div class="text-center p-4">
-								<div class="d-flex w-100">
-									<div class="flex w-100">
-										<div class="flex w-100">
-											<h4 class="mb-3 mt-1 font-weight-800 text-primary fs-16"><?php echo e(App\Services\HelperService::userAvailableWords()); ?> / <?php echo e(App\Services\HelperService::userPlanTotalWords()); ?></h4>
-											<h6 class="fs-12"><?php echo e(__('Words Left')); ?></h6>
-										</div>
-										<div class="flex w-100 mt-4">
-											<h4 class="mb-3 mt-1 font-weight-800 text-primary fs-16"><?php echo e(App\Services\HelperService::userAvailableImages()); ?> / <?php echo e(App\Services\HelperService::userPlanTotalImages()); ?></h4>
-											<h6 class="fs-12"><?php echo e(__('Images Left')); ?></h6>
-										</div>
-									</div>
-									<div class="flex w-100">
-										<div class="flex w-100">
-											<h4 class="mb-3 mt-1 font-weight-800 text-primary fs-16"><?php echo e(App\Services\HelperService::userAvailableChars()); ?> / <?php echo e(App\Services\HelperService::userPlanTotalChars()); ?></h4>
-											<h6 class="fs-12"><?php echo e(__('Characters Left')); ?></h6>
-										</div>
-										<div class="flex w-100 mt-4">
-											<h4 class="mb-3 mt-1 font-weight-800 text-primary fs-16"><?php echo e(App\Services\HelperService::userAvailableMinutes()); ?> / <?php echo e(App\Services\HelperService::userPlanTotalMinutes()); ?></h4>
-											<h6 class="fs-12"><?php echo e(__('Minutes Left')); ?></h6>
-										</div>
-									</div>
-								</div>
-							</div>
+				<div class="card-footer p-0">								
+					<div class="row text-center pt-4 pb-4">
+						<div class="col-sm">
+							<h4 class="mb-3 mt-1 font-weight-800 text-primary fs-16"><?php if(auth()->user()->available_words == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(App\Services\HelperService::userAvailableWords()); ?> <?php endif; ?></h4>
+							<h6 class="fs-12"><?php echo e(__('Words Left')); ?></h6>
 						</div>
+						<?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'user|subscriber|admin')): ?>
+							<?php if(config('settings.image_feature_user') == 'allow'): ?>
+								<div class="col-sm">
+									<h4 class="mb-3 mt-1 font-weight-800 text-primary fs-16"><?php if(auth()->user()->available_images == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(App\Services\HelperService::userAvailableImages()); ?> <?php endif; ?></h4>
+									<h6 class="fs-12"><?php echo e(__('Images Left')); ?></h6>
+								</div>
+							<?php endif; ?>
+						<?php endif; ?>
 					</div>
+					<?php if(config('settings.voiceover_feature_user') == 'allow' || config('settings.whisper_feature_user') == 'allow'): ?>
+						<div class="row text-center pb-4">
+							<?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'user|subscriber|admin')): ?>
+								<?php if(config('settings.voiceover_feature_user') == 'allow'): ?>
+									<div class="col-sm">
+										<h4 class="mb-3 mt-1 font-weight-800 text-primary fs-16"><?php if(auth()->user()->available_chars == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(App\Services\HelperService::userAvailableChars()); ?> <?php endif; ?></h4>
+										<h6 class="fs-12"><?php echo e(__('Characters Left')); ?></h6>
+									</div>
+								<?php endif; ?>
+							<?php endif; ?>
+							<?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'user|subscriber|admin')): ?>
+								<?php if(config('settings.whisper_feature_user') == 'allow'): ?>
+									<div class="col-sm">
+										<h4 class="mb-3 mt-1 font-weight-800 text-primary fs-16"><?php if(auth()->user()->available_minutes == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(App\Services\HelperService::userAvailableMinutes()); ?> <?php endif; ?></h4>
+										<h6 class="fs-12"><?php echo e(__('Minutes Left')); ?></h6>
+									</div>
+								<?php endif; ?>
+							<?php endif; ?>
+						</div>
+					<?php endif; ?>															
 				</div>
 				<div class="card-footer p-0">
 					<div class="row" id="profile-pages">
@@ -84,6 +90,23 @@
 								<a href="<?php echo e(route('user.security.2fa')); ?>" class="fs-13"><i class="fa fa-shield-check mr-1"></i> <?php echo e(__('2FA Authentication')); ?></a>
 							</div>
 						</div>
+						<?php if(auth()->user()->group == 'user'): ?>
+							<?php if(config('settings.personal_openai_api') == 'allow' || config('settings.personal_sd_api') == 'allow'): ?>
+								<div class="col-sm-12">
+									<div class="text-center pb-3">
+										<a href="<?php echo e(route('user.profile.api')); ?>" class="fs-13"><i class="fa-solid fa-key mr-1"></i> <?php echo e(__('Personal API Keys')); ?></a>
+									</div>
+								</div>
+							<?php endif; ?>
+						<?php elseif(!is_null(auth()->user()->plan_id)): ?>
+							<?php if($check_api_feature->personal_openai_api || $check_api_feature->personal_sd_api): ?>
+								<div class="col-sm-12">
+									<div class="text-center pb-3">
+										<a href="<?php echo e(route('user.profile.api')); ?>" class="fs-13"><i class="fa-solid fa-key mr-1"></i> <?php echo e(__('Personal API Keys')); ?></a>
+									</div>
+								</div>
+							<?php endif; ?>
+						<?php endif; ?>		
 						<div class="col-sm-12">
 							<div class="text-center pb-4">
 								<a href="<?php echo e(route('user.profile.delete')); ?>" class="fs-13"><i class="fa fa-user-xmark mr-1"></i> <?php echo e(__('Delete Account')); ?></a>

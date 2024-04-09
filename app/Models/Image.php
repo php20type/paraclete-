@@ -35,5 +35,10 @@ class Image extends Model
         'sd_steps',
         'sd_diffusion_samples',
         'sd_clip_guidance',
+        'vendor_engine',
+        'public',
+        'views',
+        'downloads',
+        'favorite',
     ];
 }

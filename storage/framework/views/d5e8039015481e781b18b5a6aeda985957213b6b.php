@@ -38,17 +38,17 @@
 							<thead>
 								<tr>
 									<th width="10%"><?php echo e(__('Plan Name')); ?></th>
-									<th width="10%"><?php echo e(__('Status')); ?></th>
+									<th width="7%"><?php echo e(__('Status')); ?></th>
+									<th width="5%"><?php echo e(__('Subscribers')); ?></th>
 									<th width="7%"><?php echo e(__('Words')); ?></th>																										
 									<th width="7%"><?php echo e(__('Images')); ?></th>																										
 									<th width="7%"><?php echo e(__('Characters')); ?></th>																										
 									<th width="7%"><?php echo e(__('Minutes')); ?></th>																										
-									<th width="7%"><?php echo e(__('Frequency')); ?></th>									
-									<th width="7%"><?php echo e(__('AI Image')); ?></th>									
+									<th width="7%"><?php echo e(__('Frequency')); ?></th>																		
 									<th width="5%"><?php echo e(__('Featured')); ?></th>
 									<th width="5%"><?php echo e(__('Free')); ?></th>
-									<th width="9%"><?php echo e(__('Created On')); ?></th>
-									<th width="7%"><?php echo e(__('Action')); ?></th>
+									<th width="6%"><?php echo e(__('Created On')); ?></th>
+									<th width="7%"><?php echo e(__('Actions')); ?></th>
 								</tr>
 							</thead>
 					</table> <!-- END SET DATATABLE -->
@@ -73,8 +73,10 @@
 				"lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
 				responsive: true,
 				colReorder: true,
-				"order": [[ 0, "desc" ]],
+				"order": [[ 7, "desc" ]],
 				language: {
+					"emptyTable": "<div><br><?php echo e(__('There are no subscription plans yet')); ?></div>",
+					"info": "<?php echo e(__('Showing page')); ?> _PAGE_ <?php echo e(__('of')); ?> _PAGES_",
 					search: "<i class='fa fa-search search-icon'></i>",
 					lengthMenu: '_MENU_ ',
 					paginate : {
@@ -100,7 +102,13 @@
 						name: 'custom-status',
 						orderable: true,
 						searchable: true
-					},						
+					},		
+					{
+						data: 'custom-subscribers',
+						name: 'custom-subscribers',
+						orderable: false,
+						searchable: true
+					},				
 					{
 						data: 'custom-words',
 						name: 'custom-words',
@@ -131,12 +139,6 @@
 						orderable: true,
 						searchable: true
 					},		
-					{
-						data: 'custom-image',
-						name: 'custom-image',
-						orderable: true,
-						searchable: true
-					},
 					{
 						data: 'custom-featured',
 						name: 'custom-featured',

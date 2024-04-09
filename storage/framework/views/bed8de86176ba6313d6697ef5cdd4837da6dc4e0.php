@@ -1,8 +1,43 @@
+
+
 <?php $__env->startSection('css'); ?>
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.css"/>
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.min.css"/>
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.min.css">
 	<link href="<?php echo e(URL::asset('plugins/sweetalert/sweetalert2.min.css')); ?>" rel="stylesheet" />
+
+	<style>
+    .videos-frame-container .slick-slide {
+		margin: 0 10px;
+	}
+	.videos-frame-container .slick-dots li button:before {
+		font-family: slick;
+		font-size: 12px;
+	}
+	.slick-prev {
+    left: -15px;
+    width: 0;
+    height: 0;
+    border-left: 0 solid transparent;
+    border-right: 15px solid #113463;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    background: none;
+}
+.slick-next {
+	right: -15px;
+    width: 0;
+    height: 0;
+    border-right: 0 solid transparent;
+    border-left: 15px solid #113463;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    background: none;
+}
+.slick-next:before, .slick-prev:before {
+	display: none;
+}
+	</style>
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('page-header'); ?>
@@ -115,15 +150,33 @@
 				}
 			},
 		})
-		$(document).ready(function(){
-			$('#videoList').slick({
-				// centerPadding: "40px",
-				slidesToShow: 3,
-				infinite: true,
-				autoplay: false,
-				slidesToScroll:1,
-			});
-		});
+		
+		$('#videoList').slick({
+			dots: true,
+  infinite: true,
+  slidesToShow: 3,
+  slidesToScroll: 1,
+  arrows: true,
+  autoplay: true,
+  autoplaySpeed: 2000,
+  responsive: [
+    {
+      breakpoint: 991,
+      settings: {
+        slidesToShow: 2,
+        slidesToScroll: 1,
+      },
+    },
+    {
+      breakpoint: 576,
+      settings: {
+        slidesToShow: 1,
+        slidesToScroll: 1,
+      },
+    },
+   
+  ],
+})
 
 		function viewVideo(src){
 			$("#frameSrc").attr("src",src);

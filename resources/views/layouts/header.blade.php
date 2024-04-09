@@ -33,6 +33,4 @@
 
 <!-- All Styles -->
 <link href="{{URL::asset('css/app.css?ver='.time())}}" rel="stylesheet" />
-
-
 	

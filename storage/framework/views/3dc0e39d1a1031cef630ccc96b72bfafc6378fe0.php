@@ -11,17 +11,18 @@
 	<div class="row" id="image-side-space">
 		<div class="row no-gutters justify-content-center">
 			<div class="col-lg-9 col-md-11 col-sm-12 text-center">
-                <a class="info-btn-alt mt-4" data-bs-toggle="modal" data-bs-target="#info-alert-model" href="javascript:void(0)">How It work ?</a>
-				<h3 class="card-title mt-4 fs-20"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-primary"></i></i><?php echo e(__('AI Image Generator')); ?></h3>
+				<a class="info-btn-alt mt-4" data-bs-toggle="modal" data-bs-target="#info-alert-model" href="javascript:void(0)">How It works ?</a>
+				<h3 class="card-title mt-6 fs-20"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-primary"></i></i><?php echo e(__('AI Image Generator')); ?></h3>
 				<h6 class="text-muted mb-7"><?php echo e(__('Unleash your creativity with our AI image generator that produces stunning visuals in seconds')); ?></h6>
 				<div class="card-top d-flex text-right justify-content-right right mx-auto">
 					<div class="mr-4">
-						<p class="fs-11 text-muted pl-3"><i class="fa-sharp fa-solid fa-bolt-lightning mr-2 text-primary"></i><?php echo e(__('Your Balance is')); ?> <span class="font-weight-semibold" id="balance-number"><?php echo e(number_format(auth()->user()->available_images + auth()->user()->available_images_prepaid)); ?></span> <?php echo e(__('Images')); ?></p>
+						<p class="fs-11 text-muted pl-3"><i class="fa-sharp fa-solid fa-bolt-lightning mr-2 text-primary"></i><?php echo e(__('Your Balance is')); ?> <span class="font-weight-semibold" id="balance-number"><?php if(auth()->user()->available_images == -1): ?> <?php echo e(__('Unlimited')); ?> <?php else: ?> <?php echo e(number_format(auth()->user()->available_images + auth()->user()->available_images_prepaid)); ?> <?php echo e(__('Images')); ?><?php endif; ?></span></p>
 					</div>
 					<div>
 						<a href="#" id="main-settings-toggle"><i class="fa-sharp fa-solid fa-sliders text-muted"></i></a>
 					</div>
 				</div>
+
 				<div class="card mb-4 border-0 image-prompt-wrapper">
 					<div class="card-body p-0">					
 						<div class="image-prompt d-flex">
@@ -36,7 +37,8 @@
 						</div>					
 					</div>
 				</div>
-				<div class="card mb-4 border-0 image-prompt-wrapper sd-feature" id="negative-prompt">
+
+				<div id="negative-prompt" class="card mb-4 border-0 image-prompt-wrapper sd-feature hide-all">
 					<div class="card-body p-0">					
 						<div class="image-prompt d-flex">
 							<div class="input-box negative mb-0">								
@@ -47,8 +49,142 @@
 						</div>					
 					</div>
 				</div>
+
+				<div id="sd-multi-prompting" class="sd-feature hide-all">
+					<div class="mb-4 multi-prompts">				
+						<div class="multi-prompt-input d-flex align-items-center">
+							<div class="input-box w-100 mb-0">								
+								<div class="form-group">							    
+									<input type="text" class="form-control" name="multi_prompt[]" placeholder="<?php echo e(__('Describe what you want to see with phrases, and seperate them with commas...')); ?>">
+								</div> 
+							</div> 
+							<a href="#" class="ml-4 mr-4 delete-prompt-input" data-toggle="remove-input" data-parent=".multi-prompt-input"><i class="fa-solid fa-trash"></i></a>
+						</div>				
+					</div>
+					<div class="text-left mb-2">
+						<a href="#" class="btn btn-primary pl-5 pr-5" data-toggle="add-more" data-target=".multi-prompts"><?php echo e(__('Add More')); ?></a>
+					</div>
+				</div>
+
+				<div id="sd-image-to-image" class="sd-feature hide-all">
+					<div class="card mb-4 border-0">					
+						<div class="image-upload-box text-center">
+							<input type="file" class="image-select" name="sd_image_to_image" id="sd_image_to_image" accept="image/png" onchange="loadFile(event)">
+							<div class="image-upload-icon">
+								<i class="fa-solid fa-image-landscape fs-28 text-muted"></i>
+							</div>
+							<p class="text-dark font-weight-bold mb-2 mt-3">
+								<?php echo e(__('Drop your image here or browse')); ?>
+
+							</p>
+							<p class="mb-0 text-muted fs-12">
+								(<?php echo e(__('PNG Images')); ?> / <?php echo e(__('5MB Max')); ?>)
+							</p>
+							<img id="source-image"/>
+						</div>
+					</div>
+				</div>
+
+				<div id="sd-image-upscale" class="sd-feature hide-all">
+					<div class="card mb-4 border-0">					
+						<div class="image-upload-box text-center">
+							<input type="file" class="image-select" name="sd_image_upscale" id="sd_image_upscale" accept="image/png" onchange="loadFileScale(event)">
+							<div class="image-upload-icon">
+								<i class="fa-solid fa-image-landscape fs-28 text-muted"></i>
+							</div>
+							<p class="text-dark font-weight-bold mb-2 mt-3">
+								<?php echo e(__('Select your image that you want to upscale')); ?>
+
+							</p>
+							<p class="mb-0 text-muted fs-12">
+								(<?php echo e(__('PNG Images')); ?> / <?php echo e(__('5MB Max')); ?>)
+							</p>
+							<img id="source-image-scale"/>
+						</div>
+					</div>
+				</div>
+
+				<div id="sd-image-masking" class="sd-feature hide-all">
+					<div class="card mb-4 border-0">					
+						<div class="image-upload-box text-center">
+							<input type="file" class="image-select" name="sd_image_masking" id="sd_image_masking" accept="image/png" onchange="loadFileMask(event)">
+							<div class="image-upload-icon">
+								<i class="fa-solid fa-image-landscape fs-28 text-muted"></i>
+							</div>
+							<p class="text-dark font-weight-bold mb-2 mt-3">
+								<?php echo e(__('Upload your image with transparent target area for inpainting')); ?>
+
+							</p>
+							<p class="mb-0 text-muted fs-12">
+								(<?php echo e(__('PNG Images')); ?> / <?php echo e(__('5MB Max')); ?>)
+							</p>
+							<img id="source-image-mask"/>
+						</div>
+					</div>
+				</div>
+
+				<div id="openai-image-masking">
+					<div class="row">
+						<div class="col-md-6 col-sm-12">
+							<div class="card mb-4 border-0">					
+								<div class="image-upload-box text-center">
+									<input type="file" class="image-select" name="openai_image_masking_target" id="openai_image_masking_target" accept="image/png" onchange="loadFileMaskTarget(event)">
+									<div class="image-upload-icon">
+										<i class="fa-solid fa-image-landscape fs-28 text-muted"></i>
+									</div>
+									<p class="text-dark font-weight-bold mb-2 mt-3">
+										<?php echo e(__('Upload your target image')); ?>
+
+									</p>
+									<p class="mb-0 text-muted fs-12">
+										(<?php echo e(__('Square PNG Images')); ?> / <?php echo e(__('4MB Max')); ?>)
+									</p>
+									<img id="source-image-mask-target"/>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-6 col-sm-12">
+							<div class="card mb-4 border-0">					
+								<div class="image-upload-box text-center">
+									<input type="file" class="image-select" name="openai_image_masking_mask" id="openai_image_masking_mask" accept="image/png" onchange="loadFileMaskOpenai(event)">
+									<div class="image-upload-icon">
+										<i class="fa-solid fa-image-landscape fs-28 text-muted"></i>
+									</div>
+									<p class="text-dark font-weight-bold mb-2 mt-3">
+										<?php echo e(__('Upload your mask image')); ?>
+
+									</p>
+									<p class="mb-0 text-muted fs-12">
+										(<?php echo e(__('Square PNG Images')); ?> / <?php echo e(__('4MB Max')); ?>)
+									</p>
+									<img id="source-image-mask-openai"/>
+								</div>
+							</div>
+						</div>
+					</div>					
+				</div>
+
+				<div id="openai-image-variations">
+					<div class="card mb-4 border-0">					
+						<div class="image-upload-box text-center">
+							<input type="file" class="image-select" name="openai_image_variations" id="openai_image_variations" accept="image/png" onchange="loadFileVariations(event)">
+							<div class="image-upload-icon">
+								<i class="fa-solid fa-image-landscape fs-28 text-muted"></i>
+							</div>
+							<p class="text-dark font-weight-bold mb-2 mt-3">
+								<?php echo e(__('Upload your image to create variations')); ?>
+
+							</p>
+							<p class="mb-0 text-muted fs-12">
+								(<?php echo e(__('Square PNG Images')); ?> / <?php echo e(__('4MB Max')); ?>)
+							</p>
+							<img id="source-image-variations"/>
+						</div>
+					</div>
+				</div>
+
 				<?php if(config('settings.image_vendor') == 'stable_diffusion' || config('settings.image_vendor') == 'both'): ?>
-					<div class="card-bottom p-0 mr-5 sd-feature">
+					<div class="card-bottom p-0 mr-5 sd-feature hide-all">
 						<div class="form-group">
 							<label class="custom-switch">
 								<input type="checkbox" name="enable-negative-prompt" id="negative-prompt-checkbox" class="custom-switch-input">
@@ -57,11 +193,70 @@
 							</label>
 						</div>
 					</div>
+					<div class="card-bottom p-0 mr-5 sd-feature hide-all">
+						<div class="form-group">
+							<label class="custom-switch">
+								<input type="checkbox" name="sd-enable-multi-prompting" id="sd-multi-prompting-checkbox" class="custom-switch-input">
+								<span class="custom-switch-indicator"></span>
+								<span class="custom-switch-description text-muted"><?php echo e(__('Multi Prompting')); ?></span>
+							</label>
+						</div>
+					</div>
+					<div class="card-bottom p-0 mr-5 sd-feature hide-all">
+						<div class="form-group">
+							<label class="custom-switch">
+								<input type="checkbox" name="sd-enable-image-masking" id="sd-image-masking-checkbox" class="custom-switch-input">
+								<span class="custom-switch-indicator"></span>
+								<span class="custom-switch-description text-muted"><?php echo e(__('Image Inpainting')); ?></span>
+							</label>
+						</div>
+					</div>
+					<div class="card-bottom p-0 mr-5 sd-feature hide-all">
+						<div class="form-group">
+							<label class="custom-switch">
+								<input type="checkbox" name="sd-enable-image-upscale" id="sd-image-upscale-checkbox" class="custom-switch-input">
+								<span class="custom-switch-indicator"></span>
+								<span class="custom-switch-description text-muted"><?php echo e(__('Image Upscale')); ?></span>
+							</label>
+						</div>
+					</div>
+					<div class="card-bottom p-0 mr-5 sd-feature hide-all">
+						<div class="form-group">
+							<label class="custom-switch">
+								<input type="checkbox" name="sd-enable-image-to-image" id="sd-image-to-image-checkbox" class="custom-switch-input">
+								<span class="custom-switch-indicator"></span>
+								<span class="custom-switch-description text-muted"><?php echo e(__('Image to Image')); ?></span>
+							</label>
+						</div>
+					</div>
+				<?php endif; ?>
+
+				<?php if(config('settings.image_vendor') == 'openai' || config('settings.image_vendor') == 'both'): ?>
+					<?php if($openai_engine == 'Dalle 2'): ?>
+						<div class="card-bottom p-0 mr-5 openai-feature">
+							<div class="form-group">
+								<label class="custom-switch">
+									<input type="checkbox" name="openai-enable-image-variations" id="openai-image-variations-checkbox" class="custom-switch-input">
+									<span class="custom-switch-indicator"></span>
+									<span class="custom-switch-description text-muted"><?php echo e(__('Image Variations')); ?></span>
+								</label>
+							</div>
+						</div>
+						<div class="card-bottom p-0 mr-5 openai-feature">
+							<div class="form-group">
+								<label class="custom-switch">
+									<input type="checkbox" name="openai-enable-image-masking" id="openai-image-masking-checkbox" class="custom-switch-input">
+									<span class="custom-switch-indicator"></span>
+									<span class="custom-switch-description text-muted"><?php echo e(__('Image Inpainting')); ?></span>
+								</label>
+							</div>
+						</div>
+					<?php endif; ?>					
 				<?php endif; ?>
 			</div>
 		</div>
 		
-		<div class="row mt-8 no-gutters">
+		<div class="row mt-8 no-gutters" id="image-containers-wrapper">
 			<?php $__currentLoopData = $data; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $image): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
 				<div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 image-container">				
 					<div class="grid-item">
@@ -114,7 +309,10 @@
 							</div>
 						</label>
 					<?php endif; ?>
-				  </div>
+					<div>
+						<p class="mb-0 fs-12 text-muted"><?php echo e(__('AI Engine')); ?>: <span id="active-engine" class="font-weight-bold"><?php echo e($openai_engine); ?></span></p>
+					</div>
+				</div>				
 			</div>
 
 			<div id="form-group" class="image-numbers text-center mb-5">
@@ -129,54 +327,92 @@
 			<div id="form-group" class="mb-5">
 				<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('Image Resolution')); ?> <i class="ml-1 text-dark fs-12 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('The image resolution of the generated images')); ?>"></i></h6>
 				<?php if(config('settings.image_vendor') == 'openai' || config('settings.image_vendor') == 'both'): ?>
-					<select id="resolution" name="resolution" class="form-select openai-feature">					
-						<option value='256x256' selected>256 x 256px</option>
-						<option value='512x512'>512 x 512px</option>																															
-						<option value='1024x1024'>1024 x 1024px</option>																																																																
+					<select id="resolution" name="resolution" class="form-select openai-feature">
+						<?php if($openai_model == 'none'): ?>
+							<?php if(config('settings.image_dalle_engine') == 'dall-e-2'): ?>
+								<option value='256x256' selected>256 x 256px</option>
+								<option value='512x512'>512 x 512px</option>	
+								<option value='1024x1024'>1024 x 1024px</option>
+							<?php elseif(config('settings.image_dalle_engine') == 'dall-e-3' || config('settings.image_dalle_engine') == 'dall-e-3-hd'): ?>	
+								<option value='1024x1024' selected>1024 x 1024px</option>																												
+								<option value='1024x1792'>1024 x 1792px</option>																												
+								<option value='1792x1024'>1792 x 1024px</option>																												
+							<?php endif; ?>	
+						<?php else: ?>
+							<?php if($openai_model == 'dall-e-2'): ?>
+								<option value='256x256' selected>256 x 256px</option>
+								<option value='512x512'>512 x 512px</option>	
+								<option value='1024x1024'>1024 x 1024px</option>
+							<?php elseif($openai_model == 'dall-e-3' || $openai_model == 'dall-e-3-hd'): ?>	
+								<option value='1024x1024' selected>1024 x 1024px</option>																												
+								<option value='1024x1792'>1024 x 1792px</option>																												
+								<option value='1792x1024'>1792 x 1024px</option>																												
+							<?php endif; ?>
+						<?php endif; ?>																																																																										
 					</select>
 				<?php endif; ?>	
 				<?php if(config('settings.image_vendor') == 'stable_diffusion' || config('settings.image_vendor') == 'both'): ?>
-					<select id="resolution" name="resolution_sd" class="form-select sd-feature hide-all">							
-						<?php if(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-v1-5'): ?>
-							<option value='512x512' selected>512 x 512px</option>
-							<option value='768x768'>768 x 768px</option>
-						<?php elseif(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-512-v2-1'): ?>
-							<option value='768x512'>768 x 512px</option>
-							<option value='1024x512'>1024 x 512px</option>
-							<option value='512x512' selected>512 x 512px</option>
-							<option value='512x768'>512 x 768px</option>
-							<option value='512x1024'>512 x 1024px</option>
-						<?php elseif(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-768-v2-1'): ?>
-							<option value='1344x768'>1344 x 768px</option>
-							<option value='1152x768'>1152 x 768px</option>
-							<option value='1024x768'>1024 x 768px</option>
-							<option value='768x768' selected>768 x 768px</option>
-							<option value='768x1024'>768 x 1024px</option>
-							<option value='768x1152'>768 x 1152px</option>
-							<option value='768x1344'>768 x 1344px</option>
-						<?php elseif(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-xl-beta-v2-2-2'): ?>
-							<option value='896x512'>896 x 512px</option>
-							<option value='768x512'>768 x 512px</option>
-							<option value='512x512' selected>512 x 512px</option>
-							<option value='512x768'>512 x 768px</option>	
-							<option value='512x896'>512 x 896px</option>	
-						<?php elseif(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-xl-1024-v0-9'): ?>
-							<option value='1536x640'>1536 x 640px</option>
-							<option value='1344x768'>1344 x 768px</option>
-							<option value='1024x1024' selected>1024 x 1024px</option>
-							<option value='768x1344'>768 x 1344px</option>
-							<option value='640x1536'>640 x 1536px</option>
-						<?php elseif(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-xl-1024-v1-0'): ?>
-							<option value='1536x640'>1536 x 640px</option>
-							<option value='1344x768'>1344 x 768px</option>
-							<option value='1216x832'>1216 x 832px</option>
-							<option value='1152x896'>1152 x 896px</option>
-							<option value='1024x1024' selected>1024 x 1024px</option>
-							<option value='896x1152'>896 x 1152px</option>
-							<option value='832x1216'>832 x 1216px</option>
-							<option value='768x1344'>768 x 1344px</option>
-							<option value='640x1536'>640 x 1536px</option>
-						<?php endif; ?>																																																																
+					<select id="resolution" name="resolution_sd" class="form-select sd-feature hide-all">	
+						<?php if($sd_model == 'none'): ?>
+							<?php if(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-v1-6'): ?>
+								<option value='512x512' selected>512 x 512px</option>
+								<option value='768x768'>768 x 768px</option>
+							<?php elseif(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-xl-beta-v2-2-2'): ?>
+								<option value='896x512'>896 x 512px</option>
+								<option value='768x512'>768 x 512px</option>
+								<option value='512x512' selected>512 x 512px</option>
+								<option value='512x768'>512 x 768px</option>	
+								<option value='512x896'>512 x 896px</option>	
+							<?php elseif(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-xl-1024-v0-9'): ?>
+								<option value='1536x640'>1536 x 640px</option>
+								<option value='1344x768'>1344 x 768px</option>
+								<option value='1024x1024' selected>1024 x 1024px</option>
+								<option value='768x1344'>768 x 1344px</option>
+								<option value='640x1536'>640 x 1536px</option>
+							<?php elseif(config('settings.image_stable_diffusion_engine') == 'stable-diffusion-xl-1024-v1-0'): ?>
+								<option value='1536x640'>1536 x 640px</option>
+								<option value='1344x768'>1344 x 768px</option>
+								<option value='1216x832'>1216 x 832px</option>
+								<option value='1152x896'>1152 x 896px</option>
+								<option value='1024x1024' selected>1024 x 1024px</option>
+								<option value='896x1152'>896 x 1152px</option>
+								<option value='832x1216'>832 x 1216px</option>
+								<option value='768x1344'>768 x 1344px</option>
+								<option value='640x1536'>640 x 1536px</option>
+							<?php endif; ?>	
+						<?php else: ?>
+							<?php if($sd_model == 'stable-diffusion-v1-6'): ?>
+								<option value='1024x512'>1024 x 512px</option>
+								<option value='896x512'>896 x 512px</option>
+								<option value='768x512'>768 x 512px</option>
+								<option value='512x512' selected>512 x 512px</option>
+								<option value='512x768'>512 x 768px</option>	
+								<option value='512x896'>512 x 896px</option>	
+								<option value='512x1024'>512 x 1024px</option>	
+							<?php elseif($sd_model == 'stable-diffusion-xl-beta-v2-2-2'): ?>
+								<option value='896x512'>896 x 512px</option>
+								<option value='768x512'>768 x 512px</option>
+								<option value='512x512' selected>512 x 512px</option>
+								<option value='512x768'>512 x 768px</option>	
+								<option value='512x896'>512 x 896px</option>	
+							<?php elseif($sd_model == 'stable-diffusion-xl-1024-v0-9'): ?>
+								<option value='1536x640'>1536 x 640px</option>
+								<option value='1344x768'>1344 x 768px</option>
+								<option value='1024x1024' selected>1024 x 1024px</option>
+								<option value='768x1344'>768 x 1344px</option>
+								<option value='640x1536'>640 x 1536px</option>
+							<?php elseif($sd_model == 'stable-diffusion-xl-1024-v1-0'): ?>
+								<option value='1536x640'>1536 x 640px</option>
+								<option value='1344x768'>1344 x 768px</option>
+								<option value='1216x832'>1216 x 832px</option>
+								<option value='1152x896'>1152 x 896px</option>
+								<option value='1024x1024' selected>1024 x 1024px</option>
+								<option value='896x1152'>896 x 1152px</option>
+								<option value='832x1216'>832 x 1216px</option>
+								<option value='768x1344'>768 x 1344px</option>
+								<option value='640x1536'>640 x 1536px</option>
+							<?php endif; ?>	
+						<?php endif; ?>																																																																		
 					</select>
 				<?php endif; ?>
 			</div>
@@ -374,6 +610,17 @@
 
 					<div id="advanced-settings-wrapper">
 						<div id="form-group" class="mb-5 mt-3">
+							<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('image Strength')); ?> <i class="ml-1 text-dark fs-12 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('How much influence the uploaded image has on the diffusion process. Values close to 100 will yield images very similar to the uploaded image while values close to 1 will yield images wildly different than the uploaded image')); ?>"></i></h6>
+							<div class="range">
+								<div class="range_in">
+									<input type="range" min="1" max="100" value="35" name="image_strength">
+									<div class="slider" style="width: 35%;"></div>
+								</div>
+								<div class="value">35</div>
+							</div>
+						</div>
+
+						<div id="form-group" class="mb-5 mt-3">
 							<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('Prompt Strength')); ?> <i class="ml-1 text-dark fs-12 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('How strictly the diffusion process adheres to the prompt text (higher values keep your image closer to your prompt). Note: Higher value can reduce the output quality, giving less room to the AI for being less creative.')); ?>"></i></h6>
 							<div class="range">
 								<div class="range_in">
@@ -388,10 +635,10 @@
 							<h6 class="fs-11 mb-2 font-weight-semibold"><?php echo e(__('Generation Steps')); ?> <i class="ml-1 text-dark fs-12 fa-solid fa-circle-info" data-tippy-content="<?php echo e(__('Generation steps is how many times the image is sampled. Higher step value results in higher output quality but will take a longer time to generate results.')); ?>"></i></h6>
 							<div class="range">
 								<div class="range_in">
-									<input type="range" min="1" max="150" value="50" name="steps">
-									<div class="slider" style="width: 33%;"></div>
+									<input type="range" min="1" max="50" value="30" name="steps">
+									<div class="slider" style="width: 60%;"></div>
 								</div>
-								<div class="value">50</div>
+								<div class="value">30</div>
 							</div>
 						</div>
 
@@ -862,7 +1109,7 @@
 					<h6><?php echo e(__('Image View')); ?></h6>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
-				<div class="modal-body">
+				<div class="modal-body pb-6 pr-5 pl-5">
 					
 				</div>
 			</div>
@@ -871,6 +1118,7 @@
 	</div>
 
 </form>
+
 <div class="modal fade" id="info-alert-model" tabindex="-1" aria-labelledby="exampleModalLabel" aria-modal="true" role="dialog">
   <div class="modal-dialog modal-dialog-centered modal-xl">
     <div class="modal-content">
@@ -898,6 +1146,11 @@
 		"use strict";
 
 		checkWindowSize();
+
+		let openai_engine = "<?php echo e($openai_engine); ?>";
+		let sd_engine = "<?php echo e($sd_engine); ?>";
+		let task = 'none';
+		let openai_task = 'none';
 
 		$(".quantity .increase").off().on("click", function(e) {
 			e.preventDefault();
@@ -943,12 +1196,208 @@
 			})
 		});
 
+		// Negative Prompt Checkbox
 		$('#negative-prompt-checkbox').on('change', function(e) {
+
+			if ($('#sd-image-to-image-checkbox').is(":checked")) {
+				$('#sd-image-to-image-checkbox').prop('checked', false);
+				$('#sd-image-to-image').slideToggle();
+			}
+
+			if ($('#sd-image-masking-checkbox').is(":checked")) {
+				$('#sd-image-masking-checkbox').prop('checked', false);
+				$('#sd-image-masking').slideToggle();
+			}
+
+			if ($('#sd-image-upscale-checkbox').is(":checked")) {
+				$('#sd-image-upscale-checkbox').prop('checked', false);
+				$('#sd-image-upscale').slideToggle();
+			}
+
+			if ($('#sd-multi-prompting-checkbox').is(":checked")) {
+				$('#sd-multi-prompting-checkbox').prop('checked', false);
+				$('#sd-multi-prompting').slideToggle();
+			}
+
 			if(e.target.checked === true) {
 				$('#negative-prompt').slideToggle();
+				task = 'sd-negative-prompt';				
 			}			
 			if(e.target.checked === false) {
 				$('#negative-prompt').slideToggle();
+				task = 'none';
+			}
+		});
+
+		// Multi Prompting Checkbox
+		$('#sd-multi-prompting-checkbox').on('change', function(e) {
+
+			if ($('#sd-image-to-image-checkbox').is(":checked")) {
+				$('#sd-image-to-image-checkbox').prop('checked', false);
+				$('#sd-image-to-image').slideToggle();
+			}
+
+			if ($('#sd-image-masking-checkbox').is(":checked")) {
+				$('#sd-image-masking-checkbox').prop('checked', false);
+				$('#sd-image-masking').slideToggle();
+			}
+
+			if ($('#sd-image-upscale-checkbox').is(":checked")) {
+				$('#sd-image-upscale-checkbox').prop('checked', false);
+				$('#sd-image-upscale').slideToggle();
+			}
+
+			if ($('#negative-prompt-checkbox').is(":checked")) {
+				$('#negative-prompt-checkbox').prop('checked', false);
+				$('#negative-prompt').slideToggle();
+			}
+
+			if(e.target.checked === true) {
+				$('#sd-multi-prompting').slideToggle();
+				task = 'sd-multi-prompting';				
+			}			
+			if(e.target.checked === false) {
+				$('#sd-multi-prompting').slideToggle();
+				task = 'none';
+			}
+		});
+
+		// Image to Image Checkbox
+		$('#sd-image-to-image-checkbox').on('change', function(e) {			
+
+			if ($('#negative-prompt-checkbox').is(":checked")) {
+				$('#negative-prompt-checkbox').prop('checked', false);
+				$('#negative-prompt').slideToggle();
+			}
+
+			if ($('#sd-image-masking-checkbox').is(":checked")) {
+				$('#sd-image-masking-checkbox').prop('checked', false);
+				$('#sd-image-masking').slideToggle();
+			}
+
+			if ($('#sd-image-upscale-checkbox').is(":checked")) {
+				$('#sd-image-upscale-checkbox').prop('checked', false);
+				$('#sd-image-upscale').slideToggle();
+			}
+
+			if ($('#sd-multi-prompting-checkbox').is(":checked")) {
+				$('#sd-multi-prompting-checkbox').prop('checked', false);
+				$('#sd-multi-prompting').slideToggle();
+			}
+			
+			if(e.target.checked === true) {
+				$('#sd-image-to-image').slideToggle();
+				task = 'sd-image-to-image';
+			}			
+			if(e.target.checked === false) {
+				$('#sd-image-to-image').slideToggle();
+				task = 'none';
+			}
+		});
+
+		// Image Masking Checkbox
+		$('#sd-image-masking-checkbox').on('change', function(e) {			
+
+			if ($('#negative-prompt-checkbox').is(":checked")) {
+				$('#negative-prompt-checkbox').prop('checked', false);
+				$('#negative-prompt').slideToggle();
+			}
+
+			if ($('#sd-image-to-image-checkbox').is(":checked")) {
+				$('#sd-image-to-image-checkbox').prop('checked', false);
+				$('#sd-image-to-image').slideToggle();
+			}
+
+			if ($('#sd-image-upscale-checkbox').is(":checked")) {
+				$('#sd-image-upscale-checkbox').prop('checked', false);
+				$('#sd-image-upscale').slideToggle();
+			}
+
+			if ($('#sd-multi-prompting-checkbox').is(":checked")) {
+				$('#sd-multi-prompting-checkbox').prop('checked', false);
+				$('#sd-multi-prompting').slideToggle();
+			}
+
+			if(e.target.checked === true) {
+				$('#sd-image-masking').slideToggle();
+				task = 'sd-image-masking';
+			}			
+			if(e.target.checked === false) {
+				$('#sd-image-masking').slideToggle();
+				task = 'none';
+			}
+		});
+
+		// Image Upscale Checkbox
+		$('#sd-image-upscale-checkbox').on('change', function(e) {			
+
+			if ($('#negative-prompt-checkbox').is(":checked")) {
+				$('#negative-prompt-checkbox').prop('checked', false);
+				$('#negative-prompt').slideToggle();
+			}
+
+			if ($('#sd-image-to-image-checkbox').is(":checked")) {
+				$('#sd-image-to-image-checkbox').prop('checked', false);
+				$('#sd-image-to-image').slideToggle();
+			}
+
+			if ($('#sd-image-masking-checkbox').is(":checked")) {
+				$('#sd-image-masking-checkbox').prop('checked', false);
+				$('#sd-image-masking').slideToggle();
+			}
+
+			if ($('#sd-multi-prompting-checkbox').is(":checked")) {
+				$('#sd-multi-prompting-checkbox').prop('checked', false);
+				$('#sd-multi-prompting').slideToggle();
+			}
+
+			if(e.target.checked === true) {
+				$('#sd-image-upscale').slideToggle();
+				document.getElementById("prompt").required = false;
+				task = 'sd-image-upscale';
+			}			
+			if(e.target.checked === false) {
+				$('#sd-image-upscale').slideToggle();
+				document.getElementById("prompt").required = true;
+				task = 'none';
+			}
+		});
+
+		// Image Variations Checkbox
+		$('#openai-image-variations-checkbox').on('change', function(e) {
+
+			if ($('#openai-image-masking-checkbox').is(":checked")) {
+				$('#openai-image-masking-checkbox').prop('checked', false);
+				$('#openai-image-masking').slideToggle();
+			}
+
+			if(e.target.checked === true) {
+				$('#openai-image-variations').slideToggle();
+				document.getElementById("prompt").required = false;
+				openai_task = 'openai-image-variations';				
+			}			
+			if(e.target.checked === false) {
+				$('#openai-image-variations').slideToggle();
+				document.getElementById("prompt").required = true;
+				openai_task = 'none';
+			}
+		});
+
+		// Image Inpainting Checkbox
+		$('#openai-image-masking-checkbox').on('change', function(e) {
+
+			if ($('#openai-image-variations-checkbox').is(":checked")) {
+				$('#openai-image-variations-checkbox').prop('checked', false);
+				$('#openai-image-variations').slideToggle();
+			}
+
+			if(e.target.checked === true) {
+				$('#openai-image-masking').slideToggle();
+				openai_task = 'openai-image-masking';				
+			}			
+			if(e.target.checked === false) {
+				$('#openai-image-masking').slideToggle();
+				openai_task = 'none';
 			}
 		});
 
@@ -967,14 +1416,27 @@
 		$(document).ready(function() {
 			let vendor = document.querySelector('input[name="vendor"]:checked').value;			
 			if (vendor == 'openai') {
+				$('#active-engine').text(openai_engine);
 				$('.sd-feature').addClass('hide-all');
 				$('.openai-feature').addClass('show-all');
 				if ($(window).width() > 940 ) {
 					$('.openai-select-feature').addClass('style-initial-state');
 				} else {
 					$('.openai-select-feature').removeClass('style-initial-state').addClass('show-all');
-				}				
+				}	
+				var openai_masking = document.getElementById('openai-image-masking');			
+				var openai_variations = document.getElementById('openai-image-variations');	
+				if (openai_masking.classList.contains('hide-all')) {
+					$('#openai-image-masking').removeClass('hide-all');
+				}
+				if (openai_variations.classList.contains('hide-all')) {
+					$('#openai-image-variations').removeClass('hide-all');
+				}
+
 			} else {
+				$('#active-engine').text(sd_engine);
+				$('#openai-image-masking').addClass('hide-all');
+				$('#openai-image-variations').addClass('hide-all');
 				$('.sd-feature').removeClass('hide-all');
 				$('.openai-feature').removeClass('show-all').addClass('hide-all');
 				if ($(window).width() > 940 ) {
@@ -989,13 +1451,25 @@
 			elem.addEventListener('change', function(event) {
 				let item = event.target.value;
 				if (item == 'openai') {
+					$('#active-engine').text(openai_engine);
 					$('.sd-feature').addClass('hide-all');
 					$('.openai-feature').addClass('show-all');	
 					if ($(window).width() < 940 ) {
 						$('.openai-select-feature').addClass('show-all');
 					}		
-					$('.sd-select-feature').removeClass('show-all').addClass('hide-all');		
+					$('.sd-select-feature').removeClass('show-all').addClass('hide-all');
+					var openai_masking = document.getElementById('openai-image-masking');			
+					var openai_variations = document.getElementById('openai-image-variations');	
+					if (openai_masking.classList.contains('hide-all')) {
+						$('#openai-image-masking').removeClass('hide-all');
+					}
+					if (openai_variations.classList.contains('hide-all')) {
+						$('#openai-image-variations').removeClass('hide-all');
+					}		
 				} else {
+					$('#active-engine').text(sd_engine);
+					$('#openai-image-masking').addClass('hide-all');
+					$('#openai-image-variations').addClass('hide-all');
 					$('.sd-feature').removeClass('hide-all');
 					$('.openai-feature').removeClass('show-all').addClass('hide-all');
 					$('.openai-select-feature').removeClass('show-all').addClass('hide-all');
@@ -1094,13 +1568,62 @@
 
 			e.preventDefault();
 
-			let form = $(this);
+			let form = new FormData(this);
+			form.append('task', task);
+			form.append('openai_task', openai_task);
+
+			if (task != 'none') {
+				if (task == 'sd-image-to-image') {
+					if (document.getElementById('sd_image_to_image').files.length === 0) {
+						Swal.fire('<?php echo e(__('Image to Image Task Warning')); ?>', '<?php echo e(__('Please select an image file first for this task')); ?>', 'warning');
+						return;
+					} else {
+						form.append('image', document.getElementById('sd_image_to_image').files[0]);	
+					}
+				} else if (task == 'sd-image-upscale') {
+					if (document.getElementById('sd_image_upscale').files.length === 0) {
+						Swal.fire('<?php echo e(__('Image Upscale Task Warning')); ?>', '<?php echo e(__('Please select an image file first for this task')); ?>', 'warning');
+						return;
+					} else {
+						form.append('image', document.getElementById('sd_image_upscale').files[0]);
+					}
+				} else if (task == 'sd-image-masking') {
+					if (document.getElementById('sd_image_masking').files.length === 0) {
+						Swal.fire('<?php echo e(__('Image Masking Task Warning')); ?>', '<?php echo e(__('Please select an image file first for this task')); ?>', 'warning');
+						return;
+					} else {
+						form.append('image', document.getElementById('sd_image_masking').files[0]);
+					}
+				}
+			} 
+
+			if (openai_task != 'none') {
+			 	if (openai_task == 'openai-image-masking') {
+					if (document.getElementById('openai_image_masking_target').files.length === 0 || document.getElementById('openai_image_masking_mask').files.length === 0) {
+						Swal.fire('<?php echo e(__('Image Masking Task Warning')); ?>', '<?php echo e(__('Please include both target and mask images for OpenAI image masking task')); ?>', 'warning');
+						return;
+					} else {
+						form.append('image_target', document.getElementById('openai_image_masking_target').files[0]);
+						form.append('image_mask', document.getElementById('openai_image_masking_mask').files[0]);
+					}
+				} else if (openai_task == 'openai-image-variations') {
+					if (document.getElementById('openai_image_variations').files.length === 0) {
+						Swal.fire('<?php echo e(__('Image Masking Task Warning')); ?>', '<?php echo e(__('Please select an image file first for this task')); ?>', 'warning');
+						return;
+					} else {
+						form.append('image_target', document.getElementById('openai_image_variations').files[0]);
+					}
+				}
+			} 
 
 			$.ajax({
 				headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
 				method: 'POST',
 				url: 'images/process',
-				data: form.serialize(),
+				data: form,
+				contentType: false,
+				processData: false,
+				cache: false,
 				beforeSend: function() {
 					$('#image-generate').html('<i class="fa-sharp fa-solid fa-wand-magic-sparkles fa-beat-fade mr-2"></i><?php echo e(__("Generating...")); ?>');
 					$('#image-generate').prop('disabled', true);       
@@ -1113,18 +1636,34 @@
 						
 					if (data['status'] == 'success') {		
 						let images = data['images'];
+		
 						for (let i in images) {
-							$(".image-container:first").before(images[i]).show().fadeIn("slow");
+							var checkContainer = document.getElementsByClassName('image-container');
+							if (checkContainer.length == 0) {
+								$('#image-containers-wrapper').append(images[i]).show().fadeIn("slow");
+							} else {
+								$(".image-container:first").before(images[i]).show().fadeIn("slow");
+							}							
 						}
-						toastr.success('<?php echo e(__('Images were generated successfully')); ?>');		
-						animateValue("balance-number", data['old'], data['current'], 2000);	
+						toastr.success('<?php echo e(__('Images were generated successfully')); ?>');	
+						
+						if (data['balance'] != 'unlimited') {
+							animateValue("balance-number", data['old'], data['current'], 2000);	
+						}
+
+						clearFileInput(task);
+						clearFileInputOpenai(openai_task);
 					} else {						
 						Swal.fire('<?php echo e(__('Image Generation Error')); ?>', data['message'], 'warning');
+						clearFileInput(task);
+						clearFileInputOpenai(openai_task);
 					}
 				},
 				error: function(data) {
 					$('#image-generate').prop('disabled', false);
             		$('#image-generate').html('<i class="fa-sharp fa-solid fa-wand-magic-sparkles mr-2"></i><?php echo e(__("Generate")); ?>'); 
+					clearFileInput(task);
+					clearFileInputOpenai(openai_task);
 					console.log(data)
 				}
 			});
@@ -1181,6 +1720,31 @@
 				fetchData(); 
 			}
 		});
+
+		$(document).on("click", '[data-toggle="remove-input"]', function() {
+                var $this = $(this);
+                var parent = $this.data("parent");
+                $this.closest(parent).remove();
+            }
+        );
+
+		$('[data-toggle="add-more"]').each(function() {
+            var $this = $(this);
+            var content = '<div class="multi-prompt-input d-flex align-items-center mt-2">' + 
+							'<div class="input-box w-100 mb-0">' + 							
+								'<div class="form-group">' +							    
+									'<input type="text" class="form-control" name="multi_prompt[]" placeholder="<?php echo e(__('Describe what you want to see with phrases, and seperate them with commas...')); ?>">' +
+								'</div>' +
+							'</div>' +
+							'<a href="#" class="ml-4 mr-4 delete-prompt-input" data-toggle="remove-input" data-parent=".multi-prompt-input"><i class="fa-solid fa-trash"></i></a>'+
+						'</div>'
+            var target = $this.data("target");
+
+            $this.on("click", function(e) {
+                e.preventDefault();
+                $(target).append(content);
+            });
+        });
 	});
 
 	function onScroll(){
@@ -1249,6 +1813,133 @@
         }
     }
 
+	$(document).on('click', ".copy-image-prompt", function (e) {	
+		var r = document.createRange();
+		r.selectNode(document.getElementById('image-prompt-text'));
+		window.getSelection().removeAllRanges();
+		window.getSelection().addRange(r);
+		document.execCommand('copy');
+		window.getSelection().removeAllRanges();
+		toastr.success('<?php echo e(__('Image prompt has been copied')); ?>');
+	});
+
+	$(document).on('click', ".copy-image-negative-prompt", function (e) {	
+		var r = document.createRange();
+		r.selectNode(document.getElementById('image-negative-prompt-text'));
+		window.getSelection().removeAllRanges();
+		window.getSelection().addRange(r);
+		document.execCommand('copy');
+		window.getSelection().removeAllRanges();
+		toastr.success('<?php echo e(__('Image prompt has been copied')); ?>');
+	});
+
+	var loadFile = function(event) {
+		var output = document.getElementById('source-image');
+		output.style.display = 'block';
+		output.src = URL.createObjectURL(event.target.files[0]);
+		output.onload = function() {
+			URL.revokeObjectURL(output.src) // free memory
+		}
+	};
+
+	var loadFileScale = function(event) {
+		var output = document.getElementById('source-image-scale');
+		output.style.display = 'block';
+		output.src = URL.createObjectURL(event.target.files[0]);
+		output.onload = function() {
+			URL.revokeObjectURL(output.src) // free memory
+		}
+	};
+
+	var loadFileMask = function(event) {
+		var output = document.getElementById('source-image-mask');
+		output.style.display = 'block';
+		output.src = URL.createObjectURL(event.target.files[0]);
+		output.onload = function() {
+			URL.revokeObjectURL(output.src) // free memory
+		}
+	};
+
+	var loadFileMaskTarget = function(event) {
+		var output = document.getElementById('source-image-mask-target');
+		output.style.display = 'block';
+		output.src = URL.createObjectURL(event.target.files[0]);
+		output.onload = function() {
+			URL.revokeObjectURL(output.src) // free memory
+		}
+	};
+
+	var loadFileMaskOpenai = function(event) {
+		var output = document.getElementById('source-image-mask-openai');
+		output.style.display = 'block';
+		output.src = URL.createObjectURL(event.target.files[0]);
+		output.onload = function() {
+			URL.revokeObjectURL(output.src) // free memory
+		}
+	};
+
+	var loadFileVariations = function(event) {
+		var output = document.getElementById('source-image-variations');
+		output.style.display = 'block';
+		output.src = URL.createObjectURL(event.target.files[0]);
+		output.onload = function() {
+			URL.revokeObjectURL(output.src) // free memory
+		}
+	};
+
+	function clearFileInput(task) {
+		switch (task) {
+			case 'sd-image-to-image':
+				document.getElementById('sd_image_to_image').value=null;
+				var output = document.getElementById('source-image');
+				output.style.display = 'none';
+				break;
+			case 'sd-image-upscale':
+				document.getElementById('sd_image_upscale').value=null;
+				var output = document.getElementById('source-image-scale');
+				output.style.display = 'none';
+				break;
+			case 'sd-image-masking':
+				document.getElementById('sd_image_masking').value=null;
+				var output = document.getElementById('source-image-mask');
+				output.style.display = 'none';
+				break;
+			case 'openai-image-variations':
+				document.getElementById('openai_image_variations').value=null;
+				var output = document.getElementById('source-image-variations');
+				output.style.display = 'none';
+				break;
+			case 'openai-image-masking':
+				document.getElementById('openai_image_masking_target').value=null;
+				document.getElementById('openai_image_masking_mask').value=null;
+				var output = document.getElementById('source-image-mask-target');
+				var output = document.getElementById('source-image-mask-openai');
+				output.style.display = 'none';
+				break;
+			default:
+				break;
+		}
+	}
+
+	function clearFileInputOpenai(openai_task) {
+		switch (openai_task) {
+			case 'openai-image-variations':
+				document.getElementById('openai_image_variations').value=null;
+				var output = document.getElementById('source-image-variations');
+				output.style.display = 'none';
+				break;
+			case 'openai-image-masking':
+				document.getElementById('openai_image_masking_target').value=null;
+				document.getElementById('openai_image_masking_mask').value=null;
+				var target = document.getElementById('source-image-mask-target');
+				var mask = document.getElementById('source-image-mask-openai');
+				target.style.display = 'none';
+				mask.style.display = 'none';
+				break;
+			default:
+				break;
+		}
+	}
 
 </script>
 <?php $__env->stopSection(); ?>

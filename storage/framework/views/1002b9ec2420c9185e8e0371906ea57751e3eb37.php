@@ -13,7 +13,7 @@
 		<ol class="breadcrumb mb-2">
 			<li class="breadcrumb-item"><a href="<?php echo e(route('user.dashboard')); ?>"><i class="fa-solid fa-folder-bookmark mr-2 fs-12"></i><?php echo e(__('AI Panel')); ?></a></li>
 			<li class="breadcrumb-item"><a href="<?php echo e(route('user.documents')); ?>"> <?php echo e(__('Documents')); ?></a></li>
-			<li class="breadcrumb-item active" aria-current="page"><a href="<?php echo e(url('#')); ?>"> <?php echo e(__('All Voiceovers')); ?></a></li>
+			<li class="breadcrumb-item active" aria-current="page"><a href="<?php echo e(url('#')); ?>"> <?php echo e(__('Voiceover Results')); ?></a></li>
 		</ol>
 	</div>
 </div>
@@ -95,6 +95,7 @@
 			colReorder: true,
 			language: {
 				"emptyTable": "<div><img id='no-results-img' src='<?php echo e(URL::asset('img/files/no-result.png')); ?>'><br><?php echo e(__('No synthesized text results yet')); ?></div>",
+				"info": "<?php echo e(__('Showing page')); ?> _PAGE_ <?php echo e(__('of')); ?> _PAGES_",
 				search: "<i class='fa fa-search search-icon'></i>",
 				lengthMenu: '_MENU_ ',
 				paginate : {

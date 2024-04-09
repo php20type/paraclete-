@@ -67,6 +67,10 @@ return new class extends Migration
             $table->boolean('member_use_credits_voiceover')->default(1)->nullable(); 
             $table->boolean('member_use_credits_speech')->default(1)->nullable(); 
             $table->boolean('member_use_credits_image')->default(1)->nullable(); 
+            $table->string('personal_openai_key')->nullable();
+            $table->string('personal_sd_key')->nullable();
+            $table->boolean('hidden_plan')->nullable()->default(false);
+            $table->boolean('used_free_tier')->nullable()->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

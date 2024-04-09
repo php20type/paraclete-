@@ -91,7 +91,7 @@ unset($__errorArgs, $__bag); ?>
 									<h6><?php echo e(__('Template Category')); ?> <span class="text-required"><i class="fa-solid fa-asterisk"></i></span></h6>
 									<select id="image-feature-user" name="category" class="form-select" data-placeholder="<?php echo e(__('Select template category')); ?>">
 										<?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-											<option value="<?php echo e($category->code); ?>"> <?php echo e(ucfirst($category->name)); ?></option>
+											<option value="<?php echo e($category->code); ?>"> <?php echo e(__(ucfirst($category->name))); ?></option>
 										<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>																																																													
 									</select>
 								</div>
@@ -262,6 +262,7 @@ unset($__errorArgs, $__bag); ?>
 				"order": [[3, "asc"]],
 				language: {
 					"emptyTable": "<div><img id='no-results-img' src='<?php echo e(URL::asset('img/files/no-result.png')); ?>'><br>No custom templates created yet</div>",
+					"info": "<?php echo e(__('Showing page')); ?> _PAGE_ <?php echo e(__('of')); ?> _PAGES_",
 					search: "<i class='fa fa-search search-icon'></i>",
 					lengthMenu: '_MENU_ ',
 					paginate : {

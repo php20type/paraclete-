@@ -12,7 +12,7 @@
             .editing-tools-btn-group {
                 display: flex;
                 flex-direction: row;
-                width: 300px;
+                width: 28%;
                 margin: 0;
                 padding: 10px 0px;
                 border: 0px solid #fff;
@@ -165,7 +165,32 @@
             .blur-background {
                 filter: blur(5px); /* Adjust the blur amount as needed */
             }
-
+            @media screen and (max-width: 1024px) {
+                .editing-tools-layout {
+                    display: flex;
+                    flex-direction: column;
+                }
+                .editing-tools-btn-group {
+                     position: relative;
+                         width: 100%;
+                             margin-bottom: 25px;
+                }
+                .upload-image-area {
+                    width: 100%;
+                }
+            }
+            @media screen and (max-width: 767px) {
+                .upload-image-area .upload-img {
+                     margin-top: 0;
+                    width: auto;
+                    background-size: 40%;
+                        Height: 200px;
+                }
+                .upload-image-area {
+                    Height: 360px;
+                }
+            }
+        
         </style>
     <?php $__env->stopSection(); ?>
 
@@ -176,10 +201,6 @@
                 <button id="crop-image" class="spectrum-Button spectrum-Button--fill spectrum-Button--accent spectrum-Button--sizeL" >
                     <span class="editing-icon"><image src="../../../../public/img/editor/crop-blue.png" /></span>
                     <span class="spectrum-Button-label">Crop Image</span>
-                </button>
-                <button id="convert-size " class="spectrum-Button spectrum-Button--fill spectrum-Button--accent spectrum-Button--sizeL" >
-                    <span class="editing-icon"><image src="../../../../public/img/editor/crop-blue.png" /></span>
-                    <span class="spectrum-Button-label">Convert To GIF</span>
                 </button>
                 <button id="resize-image" class="spectrum-Button spectrum-Button--fill spectrum-Button--accent spectrum-Button--sizeL" >
                 <span class="editing-icon"><image src="../../../../public/img/editor/increase-blue.png" /></span>
@@ -201,12 +222,6 @@
                 <span class="editing-icon"><image src="../../../../public/img/editor/edit-image-blue.png" /></span>
                     <span class="spectrum-Button-label">Create Customize template</span>
                 </button>
-                
-                <button id="clear" class="spectrum-Button spectrum-Button--outline spectrum-Button--secondary spectrum-Button--sizeL" >
-                <span class="editing-icon"><image src="../../../../public/img/editor/invisible-blue.png" /></span>
-                    <span class="spectrum-Button-label">Hide</span>
-                </button>
-    
     </div>
 
     <div class="upload-image-area">

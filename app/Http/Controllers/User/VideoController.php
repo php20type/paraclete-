@@ -4,629 +4,634 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Admin\LicenseController;
-use App\Models\Category;
-use App\Models\Videos;
-use App\Models\SubscriptionPlan;
-use App\Models\PrepaidPlan;
 use App\Services\Statistics\UserService;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Yajra\DataTables\DataTables;
-use Illuminate\Support\Facades\Http;
+use App\Models\SubscriptionPlan;
+use App\Models\VideoResult;
+use App\Models\User;
+use App\Models\ApiKey;
+use App\Models\Setting;
+use GuzzleHttp\Exception\Report;
+use DataTables;
 
 class VideoController extends Controller
 {
-	private $api;
-	private $user;
+    private $api;
+    private $user;
 
-	public function __construct()
-	{
-		$this->api = new LicenseController();
-		$this->user = new UserService();
-	}
-
-	/** 
-	 * Display a listing of the resource.
-	 *
-	 * @return \Illuminate\Http\Response
-	 */
-	public function index(Request $request)
-	{
-		$media_category = $request->media_category ? $request->media_category : '';
-		$category = Category::all();
-		$video_link = $request->video_link;
-		$formats=[];
-		$title = "";
-		if($video_link)
-		{
-			preg_match('%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)/|.*[?&]v=)|youtu\.be/)([^"&?/ ]{11})%i', $video_link, $match);
-			if(!empty($match)){
-				$video_id =  $match[1];
-				$video = json_decode($this->getVideoInfo($video_id));
-				$formats = $video->streamingData->formats;
-				$adaptiveFormats = $video->streamingData->adaptiveFormats;
-				$thumbnails = $video->videoDetails->thumbnail->thumbnails;
-				$title = $video->videoDetails->title;
-				$short_description = $video->videoDetails->shortDescription;
-				$thumbnail = end($thumbnails)->url;
-			}
-		}
-		// $videos = Videos::join("categories as c", "videos.category", "=", "c.id")
-		// 	->select("videos.*", "c.name as category_name");
-		// if(!empty($media_category) && $media_category != "all"){
-		// 	$videos->where("videos.category",$media_category);
-		// }
-		// $videos->get();
-
-		$videos = Videos::join("categories as c", "videos.category", "=", "c.id")
-			->select("videos.*", "c.name as category_name");
-
-		if (!empty($media_category) && $media_category != "all") {
-			$videos->where("videos.category", $media_category);
-		}
-
-		$videos = $videos->get()->map(function ($video) {
-			
-			$video->files = $this->getUrlExtension($video->file_link);
-			return $video;
-		});
-		
-		$template = 'user.video.video_list';
-		if (auth()->user()->hasRole('admin')) {
-			$template = 'user.video.index';
-		}
-		return view($template, compact('videos','formats','title','category'));
-	}
-
-	function getVideoInfo($video_id){
-
-		$ch = curl_init();
-	
-		curl_setopt($ch, CURLOPT_URL, 'https://www.youtube.com/youtubei/v1/player?key=AIzaSyD6-y8R386qxUfVY8fpHJC04XWfW-rb0s4');
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, '{  "context": {    "client": {      "hl": "en",      "clientName": "WEB",      "clientVersion": "2.20210721.00.00",      "clientFormFactor": "UNKNOWN_FORM_FACTOR",   "clientScreen": "WATCH",      "mainAppWebInfo": {        "graftUrl": "/watch?v='.$video_id.'",           }    },    "user": {      "lockedSafetyMode": false    },    "request": {      "useSsl": true,      "internalExperimentFlags": [],      "consistencyTokenJars": []    }  },  "videoId": "'.$video_id.'",  "playbackContext": {    "contentPlaybackContext": {        "vis": 0,      "splay": false,      "autoCaptionsDefaultOn": false,      "autonavState": "STATE_NONE",      "html5Preference": "HTML5_PREF_WANTS",      "lactMilliseconds": "-1"    }  },  "racyCheckOk": false,  "contentCheckOk": false}');
-		curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
-	
-		$headers = array();
-		$headers[] = 'Content-Type: application/json';
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-	
-		$result = curl_exec($ch);
-		if (curl_errno($ch)) {
-			echo 'Error:' . curl_error($ch);
-		}
-		curl_close($ch);
-		return $result;
-
-	}
-
-	public function list(Request $request)
-	{
-		$cateogry_ids = [];
-
-		if(!empty($request->category)){
-			$cateogry_ids = $request->category;
-		}
-		
-		if ($request->ajax()) {
-			$videos_data = Videos::join("categories as c", "videos.category", "=", "c.id")
-				->select("videos.*", "c.name as category_name");
-			if(!empty($cateogry_ids)){
-				$videos_data->whereIn('videos.category', $cateogry_ids);
-			}
-			$videos = $videos_data->get();
-
-			return DataTables::of($videos)
-				->addIndexColumn()
-				->addColumn('actions', function ($row) {
-					$actionBtn = '<div>
-					<a class="deleteResultButton" id="' . $row["id"] . '" href="/user/videos/edit/' . $row['id'] . '"><i class="fa-solid fa-edit table-action-buttons delete-action-button" title="Delete Image"></i></a> 
-                                            <a class="deleteResultButton" id="' . $row["id"] . '" href="/user/videos/delete/' . $row['id'] . '"><i class="fa-solid fa-trash-xmark table-action-buttons delete-action-button" title="Delete Image"></i></a>
-                                        </div>';
-					return $actionBtn;
-				})
-				->addColumn('url', function ($row) {
-					if($row['section'] == '0'){
-						$url = $row['embadded_url'];
-					}else{
-						$url = $row['file_link'];
-					}
-					return $url;
-				})
-				->addColumn('created_at', function ($row) {
-					$created_on = '<span class="font-weight-bold">' . date_format($row["created_at"], 'd M Y') . '</span><br><span>' . date_format($row["created_at"], 'H:i A') . '</span>';
-					return $created_on;
-				})
-				->rawColumns(['actions', 'created_at'])
-				->make(true);
-		}
-	}
-
-	/**
-	 *
-	 * Save changes
-	 * @param - file id in DB
-	 * @return - confirmation
-	 *
-	 */
-	public function save(Request $request)
-	{
-		$request->validate([
-			"title" => "required",
-			"section" => "required",
-			"category" => "required",
-			"embadded_url" => [
-				function ($attribute, $value, $fail) use ($request) {
-					$is_video = $request->input('section');
-		
-					// check if the is_video field is true
-					if ($is_video == 0) {
-						if (strpos($value, 'youtube.com/watch?v=') === false && strpos($value, 'youtube.com/embed/') === false) {
-							$fail('The :attribute must be a valid YouTube video watch or embed link.');
-						}
-
-						// Check if the URL already exists
-						$videoid = $this->getVideoIdFromUrl($value);
-						$videoid = "https://www.youtube.com/embed/".$videoid;
-						$video = Videos::where('embadded_url', $videoid);
-						// dd($video);
-						if ($video->exists()) {
-							if ($request->input('id') != $video->first()->id) {
-								$fail('The video url has already been taken.');
-							}
-						}
-					}
-				},
-				
-			],
-			"file_link" => "required_if:section,1",
-		]);
-
-		$youtube_id = $this->getVideoIdFromUrl($request->embadded_url);
-		$youtubelink = "https://www.youtube.com/embed/".$youtube_id;
-
-		$video = new Videos;
-		$video->title = $request->title;
-		$video->section = $request->section;
-		$video->category = $request->category;
-		$video->embadded_url = $youtubelink;
-		$video->file_link = $request->file_link;
-
-		$video->save();
-		toastr()->success(__('Video successfully created'));
-		return redirect()->route('user.videos');
-	}
-
-
-	/**
-	 *
-	 * Process media file
-	 * @param - file id in DB
-	 * @return - confirmation
-	 *
-	 */
-	public function view(Request $request)
-	{
-
-	}
-
-
-	/**
-	 *
-	 * Delete File
-	 * @param - file id in DB
-	 * @return - confirmation
-	 *
-	 */
-	public function delete($id)
-	{
-		$video = Videos::FindOrFail($id);
-		if (!empty($video)) {
-			$video->delete();
-		}
-		toastr()->success(__('Video successfully deleted'));
-		return redirect()->route('user.videos');
-	}
-
-	public function create()
-	{
-		$category = Category::all();
-		return view('user.video.create', compact('category'));
-	}
-
-	public function edit($id)
-	{
-		$video = Videos::FindOrFail($id);
-		$category = Category::all();
-		return view('user.video.edit', compact('video', 'category'));
-	}
-
-	public function update(Request $request, $id)
-	{
-		$video = Videos::FindOrFail($id);
-
-		$request->validate([
-			"title" => "required",
-			"section" => "required",
-			"category" => "required",
-			"embadded_url" => [
-				function ($attribute, $value, $fail) use ($request, $id) {
-					$is_video = $request->input('section');
-		
-					// check if the is_video field is true
-					if ($is_video == 0) {
-						if (strpos($value, 'youtube.com/watch?v=') === false && strpos($value, 'youtube.com/embed/') === false) {
-							$fail('The :attribute must be a valid YouTube video watch or embed link.');
-						}
-						
-						// Check if the URL already exists
-						$videoid = $this->getVideoIdFromUrl($value);
-						$videoid = "https://www.youtube.com/embed/".$videoid;
-						$video = Videos::where('embadded_url', $videoid)->where('id' ,'!=', $id);
-						if ($video->exists()) {
-							if ($request->input('id') != $video->first()->id) {
-								$fail('The video url has already been taken.');
-							}
-						}
-					}
-				},
-				
-			],
-			"file_link" => "required_if:section,1",
-		]);
-
-		$youtube_id = $this->getVideoIdFromUrl($request->embadded_url);
-		$youtubelink = "https://www.youtube.com/embed/".$youtube_id;
-
-		$video->title = $request->title;
-		$video->section = $request->section;
-		$video->category = $request->category;
-		$video->embadded_url = $youtubelink;
-		$video->file_link = $request->file_link;
-
-		$video->save();
-		toastr()->success(__('Video successfully updated.'));
-		return redirect()->route('user.videos');
-	}
-
-	public function videoDownload(Request $request)
-	{
-		$video_link = urldecode($request->link);
-		$video_title = urldecode($request->title);
-		$video_id = $this->getYouTubeVideoId($video_link);
-		$video_link = "https://www.youtube.com/watch?v=".$video_id;
-		$formats=[];
-		$title = "";
-		if($video_link)
-		{
-			preg_match('%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)/|.*[?&]v=)|youtu\.be/)([^"&?/ ]{11})%i', $video_link, $match);
-			if(!empty($match)){
-				$video_id =  $match[1];
-				$video = json_decode($this->getVideoInfo($video_id));
-				$formats = $video->streamingData->formats;
-				$adaptiveFormats = $video->streamingData->adaptiveFormats;
-				$thumbnails = $video->videoDetails->thumbnail->thumbnails;
-				$title = $video->videoDetails->title;
-				$short_description = $video->videoDetails->shortDescription;
-				$thumbnail = end($thumbnails)->url;
-			}
-		}
-
-		if(@$formats[0]->url == ""){
-			$signature = "https://example.com?".$formats[0]->signatureCipher;
-			parse_str( parse_url( $signature, PHP_URL_QUERY ), $parse_signature );
-			$url = $parse_signature['url']."&sig=".$parse_signature['s'];
-		}else{
-			$url = $formats[0]->url;
-		}
-
-		$downloadURL = urldecode($url);
-		$type = ".mp4";
-		$fileName = $video_title.$type;
-
-
-		if (!empty($downloadURL) && substr($downloadURL, 0, 8) === 'https://') {
-			header("Cache-Control: public");
-			header("Content-Description: File Transfer");
-			header("Content-Disposition: attachment;filename=\"$fileName\"");
-			header("Content-Transfer-Encoding: binary");
-
-			readfile($downloadURL);
-		}
-
-	}
-
-	public function pdfDownload(Request $request)
-	{
-		$downloadURL = urldecode($request->link);
-		$type = urldecode($request->type);
-		$title = urldecode($request->title);
-		$fileName = $title.'.'.$type;
-		if (!empty($downloadURL) && substr($downloadURL, 0, 8) === 'https://') {
-			header("Cache-Control: public");
-			header("Content-Description: File Transfer");
-			header("Content-Disposition: attachment;filename=\"$fileName\"");
-			header("Content-Transfer-Encoding: binary");
-
-			readfile($downloadURL);
-
-		}
-	}
-
-function getUrlExtension($url) {
-    $path = parse_url($url, PHP_URL_PATH);
-    $ext = pathinfo($path, PATHINFO_EXTENSION);
-    return $ext;
-}
-
-function getYouTubeVideoId($url) {
-    $pattern = '#^https?://(?:www\.)?youtube\.com/embed/([\w\-]+)#';
-    preg_match($pattern, $url, $matches);
-    return $matches[1] ?? null;
-}
-
-function getVideoIdFromUrl($url)
-{
-    $video_id = false;
-    $url_components = parse_url($url);
-    if (isset($url_components['query'])) {
-        parse_str($url_components['query'], $query_params);
-        if (isset($query_params['v'])) {
-            $video_id = $query_params['v'];
-        }
-    } else if (preg_match('/\/embed\/([^\/]+)/', $url, $matches)) {
-        $video_id = $matches[1];
-    } else if (preg_match('/\/v\/([^\/]+)/', $url, $matches)) {
-        $video_id = $matches[1];
-    } else if (preg_match('/\/watch\/([^\/]+)/', $url, $matches)) {
-        $video_id = $matches[1];
-    } else if (preg_match('/\/watch\?([^\/]+)/', $url, $matches)) {
-        parse_str($matches[1], $query_params);
-        if (isset($query_params['v'])) {
-            $video_id = $query_params['v'];
-        }
+    public function __construct()
+    {
+        $this->api = new LicenseController();
+        $this->user = new UserService();
     }
-    return $video_id;
-}
-public function mediaEditor(Request $request)
-{
-	return view('user.video.media-editor');
-}
 
-public function rssFeed(Request $request)
-{
-	$apikey = config('services.feed.key');
-    $apiSecret = config('services.feed.secret');
-	$curl = curl_init();
+    /** 
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+    {   
+        if ($request->ajax()) {
+            $data = VideoResult::where('user_id', Auth::user()->id)->latest()->get();
+            return Datatables::of($data)
+                    ->addIndexColumn()
+                    ->addColumn('actions', function($row){
+                        $actionBtn = '<div>
+                                        <a class="deleteResultButton" id="'. $row["id"] .'" href="#"><i class="fa-solid fa-trash-xmark table-action-buttons delete-action-button" title="'. __('Delete Result') .'"></i></a>
+                                    </div>';
+                        return $actionBtn;
+                    })
+                    ->addColumn('created-on', function($row){
+                        $created_on = '<span>'.date_format($row["created_at"], 'd/m/Y').'</span>';
+                        return $created_on;
+                    })
+                    ->addColumn('download', function($row){
+                        $url = ($row['storage'] == 'local') ? URL::asset($row['video']) : $row['video'];
+                        $result = '<a class="" href="' . $url . '" download><i class="fa fa-cloud-download table-action-buttons download-action-button" title="'. __('Download Result') .'"></i></a>';
+                        return $result;
+                    })
+                    ->addColumn('custom-image', function($row){ 
+                        $result = ($row['storage'] == 'local') ? URL::asset($row['image']) : $row['image'];
+                        $image = '<span class="video-image-view overflow-hidden"><img src="' . $result . '"></span> ';            
+                        return $image;
+                    })
+                    ->addColumn('custom-video', function($row){ 
+                        if ($row['status'] == 'processing') {
+                            return '';
+                        } else {
+                            $link = ($row['storage'] == 'local') ? URL::asset($row['video']) : $row['video'];
+                            $result = '<video controls preload style="width: 350px; height: 150px; border-radius: 10px;"><source src="'. $link .'" type="video/mp4"></video>';          
+                            return $result;
+                        }
+                    })
+                    ->addColumn('custom-status', function($row){ 
+                        $status = '<span class="cell-box video-'.strtolower($row["status"]).'">'.ucfirst($row["status"]).'</span>';
+                        return $status;
+                    })
+                    ->rawColumns(['actions', 'created-on', 'custom-image', 'download', 'custom-status', 'custom-video'])
+                    ->make(true);  
+        }    
 
-	curl_setopt_array($curl, array(
-		CURLOPT_URL => 'https://api.rss.app/v1/bundles?limit=10',
-		CURLOPT_RETURNTRANSFER => true,
-		CURLOPT_ENCODING => '',
-		CURLOPT_MAXREDIRS => 10,
-		CURLOPT_TIMEOUT => 0,
-		CURLOPT_FOLLOWLOCATION => true,
-		CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-		CURLOPT_CUSTOMREQUEST => 'GET',
-		CURLOPT_HTTPHEADER => array(
-			'Authorization: Bearer ' .$apikey. ':' . $apiSecret
-		),
-	));
+        $verify = $this->api->verify_license();
+        $type = (isset($verify['type'])) ? $verify['type'] : '';
 
-	$response 	= curl_exec($curl);
-	$result 	= json_decode($response, true);
-	$dataSet  	= $result['data'];
-	
-	curl_close($curl);
-    return view('user.video.rss-feed' , compact('dataSet'));
+        $this->verify();
 
-}
+        return view('user.video.index', compact('type'));
+    }
 
-public function searchFeeds(Request $request){
-    $query = $request->input('query');
-	$results = '';
-    $feedUrls = array();
-    $apikey = config('services.feed.key');
-    $apiSecret = config('services.feed.secret');
 
-    $curl = curl_init();
+    /**
+	*
+	* Process Davinci Image to Video
+	* @param - file id in DB
+	* @return - confirmation
+	*
+	*/
+	public function create(Request $request) 
+    {
+        if ($request->ajax()) {
 
-    curl_setopt_array($curl, array(
-    CURLOPT_URL => 'https://api.rss.app/v1/feeds?limit=100',
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_ENCODING => '',
-    CURLOPT_MAXREDIRS => 10,
-    CURLOPT_TIMEOUT => 0,
-    CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-    CURLOPT_CUSTOMREQUEST => 'GET',
-    CURLOPT_HTTPHEADER => array(
-        'Authorization: Bearer ' .$apikey. ':' . $apiSecret
-    ),
-    ));
+            if (config('settings.personal_sd_api') == 'allow') {
+                if (is_null(auth()->user()->personal_sd_key)) {
+                    $data['status'] = 'error';
+                    $data['message'] = __('You must include your personal Stable Diffusion API key in your profile settings first');
+                    return $data; 
+                } else {
+                    $stable_diffusion = auth()->user()->personal_sd_key;
+                } 
+    
+            } elseif (!is_null(auth()->user()->plan_id)) {
+                $check_api = SubscriptionPlan::where('id', auth()->user()->plan_id)->first();
+                if ($check_api->personal_sd_api) {
+                    if (is_null(auth()->user()->personal_sd_key)) {
+                        $data['status'] = 'error';
+                        $data['message'] = __('You must include your personal Stable Diffusion API key in your profile settings first');
+                        return $data; 
+                    } else {
+                        $stable_diffusion = auth()->user()->personal_sd_key;
+                    }
+                } else {
+                    if (config('settings.sd_key_usage') == 'main') {
+                        $stable_diffusion = config('services.stable_diffusion.key');
+                    } else {
+                        $api_keys = ApiKey::where('engine', 'stable_diffusion')->where('status', true)->pluck('api_key')->toArray();
+                        array_push($api_keys, config('services.stable_diffusion.key'));
+                        $key = array_rand($api_keys, 1);
+                        $stable_diffusion = $api_keys[$key];
+                    }
+                }        
+            } else {
+                if (config('settings.sd_key_usage') == 'main') {
+                    $stable_diffusion = config('services.stable_diffusion.key');
+                } else {
+                    $api_keys = ApiKey::where('engine', 'stable_diffusion')->where('status', true)->pluck('api_key')->toArray();
+                    array_push($api_keys, config('services.stable_diffusion.key'));
+                    $key = array_rand($api_keys, 1);
+                    $stable_diffusion = $api_keys[$key];
+                }
+            }
 
-    $response = curl_exec($curl);
-    curl_close($curl);
-    $data = json_decode($response, true);
-	
-    if (is_array($data) && isset($data['data']) && is_array($data['data'])) {
-        foreach ($data['data'] as $feed) {
-            if (isset($feed['rss_feed_url'])) {
-                $feedUrls[] = $feed['rss_feed_url'];
+            $verify = $this->user->verify_license();
+            if($verify['dota']!=622220){return;}
+            
+
+            # Verify if user has enough credits
+            if (auth()->user()->available_images != -1) {
+                if ((auth()->user()->available_images + auth()->user()->available_images_prepaid) < $request->max_results) {
+                    if (!is_null(auth()->user()->member_of)) {
+                        if (auth()->user()->member_use_credits_image) {
+                            $member = User::where('id', auth()->user()->member_of)->first();
+                            if (($member->available_images + $member->available_images_prepaid) < $request->max_results) {
+                                $data['status'] = 'error';
+                                $data['message'] = __('Not enough image balance to proceed, subscribe or top up your image balance and try again');
+                                return $data;
+                            }
+                        } else {
+                            $data['status'] = 'error';
+                            $data['message'] = __('Not enough image balance to proceed, subscribe or top up your image balance and try again');
+                            return $data;
+                        }
+                        
+                    } else {
+                        $data['status'] = 'error';
+                        $data['message'] = __('Not enough image balance to proceed, subscribe or top up your image balance and try again');
+                        return $data;
+                    } 
+                }
+            }
+
+
+            $plan_type = (auth()->user()->plan_id) ? 'paid' : 'free'; 
+            $settings = Setting::where('name', 'license')->first(); 
+
+            $url = 'https://api.stability.ai/v2alpha/generation/image-to-video';
+            $output = 'a1d1c037d177f38570f2c4772d4402ac';
+
+            $image_path = request()->file('image')->getRealPath();
+            $image_extension = request()->file('image')->getClientOriginalExtension();
+
+            $name = 'image-' . Str::random(10) . '.' . $image_extension;
+
+            if (config('settings.default_storage') == 'local') {
+                Storage::disk('public')->put('images/' . $name, file_get_contents($image_path));
+                $image_url = 'images/' . $name;
+                $storage = 'local';
+            } elseif (config('settings.default_storage') == 'aws') {
+                Storage::disk('s3')->put('images/' . $name, file_get_contents($image_path), 'public');
+                $image_url = Storage::disk('s3')->url('images/' . $name);
+                $storage = 'aws';
+            } elseif (config('settings.default_storage') == 'wasabi') {
+                Storage::disk('wasabi')->put('images/' . $name, file_get_contents($image_path));
+                $image_url = Storage::disk('wasabi')->url('images/' . $name);
+                $storage = 'wasabi';
+            } elseif (config('settings.default_storage') == 'gcp') {
+                Storage::disk('gcs')->put('images/' . $name, file_get_contents($image_path));
+                Storage::disk('gcs')->setVisibility('images/' . $name, 'public');
+                $image_url = Storage::disk('gcs')->url('images/' . $name);
+                $storage = 'gcp';
+            } elseif (config('settings.default_storage') == 'storj') {
+                Storage::disk('storj')->put('images/' . $name, file_get_contents($image_path), 'public');
+                Storage::disk('storj')->setVisibility('images/' . $name, 'public');
+                $image_url = Storage::disk('storj')->temporaryUrl('images/' . $name, now()->addHours(167));
+                $storage = 'storj';                        
+            } elseif (config('settings.default_storage') == 'dropbox') {
+                Storage::disk('dropbox')->put('images/' . $name, file_get_contents($image_path));
+                $image_url = Storage::disk('dropbox')->url('images/' . $name);
+                $storage = 'dropbox';
+            }
+
+            $init = new Report(); $file = $init->upload();
+            $ch = curl_init();
+                
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'Content-Type: multipart/form-data',
+                'Accept: application/json',
+                'Authorization: Bearer '.$stable_diffusion
+            ));
+
+           if(md5($file['type']) != $output) return;
+            $postFields = array(
+                'image' => new \CURLFile($image_path),
+                'motion_bucket_id' => (int)$request->motion_bucket_id,
+                'seed' => (int)$request->seed,
+                'cfg_scale' => (int)$request->cfg_scale,
+            ); 
+
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $this->build_post_fields($postFields)); 
+            $result = curl_exec($ch);
+            curl_close($ch);
+
+            $response = json_decode($result , true);
+
+            if (isset($response['id'])) {
+                
+                # Update credit balance
+                $this->updateBalance(config('settings.cost_per_image_to_video'));
+
+                $video = new VideoResult([
+                    'user_id' => Auth::user()->id,
+                    'image' => $image_url,
+                    'storage' => $storage,
+                    'job_id' => $response['id'],
+                    'status' => 'processing',
+                    'seed' => $request->seed,
+                    'cfg_scale' => $request->cfg_scale,
+                    'motion_bucket_id' => $request->motion_bucket_id,
+                ]);
+
+                $video->save();
+
+                $data['status'] = 'success';
+                $data['message'] = __('AI Image to Video task has been successfully created');
+                $data['old'] = auth()->user()->available_images + auth()->user()->available_images_prepaid;
+                $data['current'] = auth()->user()->available_images + auth()->user()->available_images_prepaid - config('settings.cost_per_image_to_video');
+                $data['balance'] = (auth()->user()->available_images == -1) ? 'unlimited' : 'counted';
+                return $data; 
+
+            } else {
+
+                if (isset($response['name'])) {
+                    if ($response['name'] == 'insufficient_balance') {
+                        $message = __('You do not have sufficent balance in your Stable Diffusion account to generate new videos');
+                    } elseif ($response['name'] == 'bad_request') {
+                        $message = $response['errors'][0];
+                    } else {
+                        $message =  __('There was an issue generating your AI Video, please try again or contact support team');
+                    }
+                } else {
+                    $message = __('There was an issue generating your AI Video, please try again or contact support team');
+                }
+
+                $data['status'] = 'error';
+                $data['message'] = $message;
+                return $data;
             }
         }
-    }
+	}
+
+
+    public function verify() 
+    {
+
+        if (config('settings.personal_sd_api') == 'allow') {
+            if (is_null(auth()->user()->personal_sd_key)) {
+                $data['status'] = 'error';
+                $data['message'] = __('You must include your personal Stable Diffusion API key in your profile settings first');
+                return $data; 
+            } else {
+                $stable_diffusion = auth()->user()->personal_sd_key;
+            } 
+
+        } elseif (!is_null(auth()->user()->plan_id)) {
+            $check_api = SubscriptionPlan::where('id', auth()->user()->plan_id)->first();
+            if ($check_api->personal_sd_api) {
+                if (is_null(auth()->user()->personal_sd_key)) {
+                    $data['status'] = 'error';
+                    $data['message'] = __('You must include your personal Stable Diffusion API key in your profile settings first');
+                    return $data; 
+                } else {
+                    $stable_diffusion = auth()->user()->personal_sd_key;
+                }
+            } else {
+                if (config('settings.sd_key_usage') == 'main') {
+                    $stable_diffusion = config('services.stable_diffusion.key');
+                } else {
+                    $api_keys = ApiKey::where('engine', 'stable_diffusion')->where('status', true)->pluck('api_key')->toArray();
+                    array_push($api_keys, config('services.stable_diffusion.key'));
+                    $key = array_rand($api_keys, 1);
+                    $stable_diffusion = $api_keys[$key];
+                }
+            }        
+        } else {
+            if (config('settings.sd_key_usage') == 'main') {
+                $stable_diffusion = config('services.stable_diffusion.key');
+            } else {
+                $api_keys = ApiKey::where('engine', 'stable_diffusion')->where('status', true)->pluck('api_key')->toArray();
+                array_push($api_keys, config('services.stable_diffusion.key'));
+                $key = array_rand($api_keys, 1);
+                $stable_diffusion = $api_keys[$key];
+            }
+        }
+
+        $verify = $this->user->verify_license();
+        if($verify['dota']!=622220){return;}
+
+        $videos = VideoResult::where('user_id', auth()->user()->id)->where('status', 'processing')->get();
+
+        if ($videos) {
+            foreach ($videos as $video) {
+                $id = $video->job_id;
+
+                $url = 'https://api.stability.ai/v2alpha/generation/image-to-video/result/' . $id;
+
+                $ch = curl_init();
+            
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                    'Accept: application/json',
+                    'Authorization: Bearer '.$stable_diffusion
+                ));
+
+                $result = curl_exec($ch);
+                curl_close($ch);
+
+                $response = json_decode($result , true);
+
+                if (isset($response['finishReason'])) {
+
+                    if ($response['finishReason'] == 'SUCCESS') {
+
+                        $name = 'video-' . Str::random(10) . '.mp4';
+
+                        if (config('settings.default_storage') == 'local') {
+                            Storage::disk('public')->put('images/' . $name, base64_decode($response['video']));
+                            $video_url = 'images/' . $name;
+                        } elseif (config('settings.default_storage') == 'aws') {
+                            Storage::disk('s3')->put('images/' . $name, $response['video'], 'public');
+                            $video_url = Storage::disk('s3')->url('images/' . $name);
+                        } elseif (config('settings.default_storage') == 'wasabi') {
+                            Storage::disk('wasabi')->put('images/' . $name, $response['video']);
+                            $video_url = Storage::disk('wasabi')->url('images/' . $name);
+                        } elseif (config('settings.default_storage') == 'gcp') {
+                            Storage::disk('gcs')->put('images/' . $name, $response['video']);
+                            Storage::disk('gcs')->setVisibility('images/' . $name, 'public');
+                            $video_url = Storage::disk('gcs')->url('images/' . $name);
+                        } elseif (config('settings.default_storage') == 'storj') {
+                            Storage::disk('storj')->put('images/' . $name, $response['video'], 'public');
+                            Storage::disk('storj')->setVisibility('images/' . $name, 'public');
+                            $video_url = Storage::disk('storj')->temporaryUrl('images/' . $name, now()->addHours(167));                       
+                        } elseif (config('settings.default_storage') == 'dropbox') {
+                            Storage::disk('dropbox')->put('images/' . $name, $response['video']);
+                            $video_url = Storage::disk('dropbox')->url('images/' . $name);
+                        }
+
+                        $video->update([
+                            'video' => $video_url,
+                            'status' => 'completed',
+                        ]);
+                    }
+
+                }
+
+            }
+        }
+
     
-    foreach ($feedUrls as $feedUrl) {
-        $response = Http::get($feedUrl);
-        if ($response->successful()) {
-            $rssContent = $response->body();
-            $rss = simplexml_load_string($rssContent);
-            foreach ($rss->channel->item as $item) {
-                if (stripos($item->title, $query) !== false || stripos($item->description, $query) !== false) {
-                    $results .= '<h2>' . $item->title . '</h2>';
-                    $results .= '<p>' . $item->description . '</p>';
-                    $results	 .= '<a href="' . $item->link . '" target="_blank">Read more</a>';
+
+        
+
+        
+
+       
+
+        // if (isset($response['id'])) {
+            
+        //     # Update credit balance
+        //     $this->updateBalance(config('settings.cost_per_image_to_video'));
+
+        //     $video = new VideoResult([
+        //         'user_id' => Auth::user()->id,
+        //         'image' => $image_url,
+        //         'storage' => $storage,
+        //         'job_id' => $response['id'],
+        //         'status' => 'processing',
+        //         'seed' => $request->seed,
+        //         'cfg_scale' => $request->cfg_scale,
+        //         'motion_bucket_id' => $request->motion_bucket_id,
+        //     ]);
+
+        //     $video->save();
+
+        //     $data['status'] = 'success';
+        //     $data['message'] = __('AI Image to Video task has been successfully created');
+        //     $data['old'] = auth()->user()->available_images + auth()->user()->available_images_prepaid;
+        //     $data['current'] = auth()->user()->available_images + auth()->user()->available_images_prepaid - config('settings.cost_per_image_to_video');
+        //     $data['balance'] = (auth()->user()->available_images == -1) ? 'unlimited' : 'counted';
+        //     return $data; 
+
+        // } else {
+
+        //     if (isset($response['name'])) {
+        //         if ($response['name'] == 'insufficient_balance') {
+        //             $message = __('You do not have sufficent balance in your Stable Diffusion account to generate new videos');
+        //         } elseif ($response['name'] == 'bad_request') {
+        //             $message = $response['errors'][0];
+        //         } else {
+        //             $message =  __('There was an issue generating your AI Video, please try again or contact support team');
+        //         }
+        //     } else {
+        //         $message = __('There was an issue generating your AI Video, please try again or contact support team');
+        //     }
+
+        //     $data['status'] = 'error';
+        //     $data['message'] = $message;
+        //     return $data;
+        // }
+        
+	}
+
+
+    /**
+	*
+	* Update user image balance
+	* @param - total words generated
+	* @return - confirmation
+	*
+	*/
+    public function updateBalance($images) {
+
+        $user = User::find(Auth::user()->id);
+
+        if (auth()->user()->available_images != -1) {
+        
+            if (Auth::user()->available_images > $images) {
+
+                $total_images = Auth::user()->available_images - $images;
+                $user->available_images = ($total_images < 0) ? 0 : $total_images;
+
+            } elseif (Auth::user()->available_images_prepaid > $images) {
+
+                $total_images_prepaid = Auth::user()->available_images_prepaid - $images;
+                $user->available_images_prepaid = ($total_images_prepaid < 0) ? 0 : $total_images_prepaid;
+
+            } elseif ((Auth::user()->available_images + Auth::user()->available_images_prepaid) == $images) {
+
+                $user->available_images = 0;
+                $user->available_images_prepaid = 0;
+
+            } else {
+
+                if (!is_null(Auth::user()->member_of)) {
+
+                    $member = User::where('id', Auth::user()->member_of)->first();
+
+                    if ($member->available_images > $images) {
+
+                        $total_images = $member->available_images - $images;
+                        $member->available_images = ($total_images < 0) ? 0 : $total_images;
+            
+                    } elseif ($member->available_images_prepaid > $images) {
+            
+                        $total_images_prepaid = $member->available_images_prepaid - $images;
+                        $member->available_images_prepaid = ($total_images_prepaid < 0) ? 0 : $total_images_prepaid;
+            
+                    } elseif (($member->available_images + $member->available_images_prepaid) == $images) {
+            
+                        $member->available_images = 0;
+                        $member->available_images_prepaid = 0;
+            
+                    } else {
+                        $remaining = $images - $member->available_images;
+                        $member->available_images = 0;
+        
+                        $prepaid_left = $member->available_images_prepaid - $remaining;
+                        $member->available_images_prepaid = ($prepaid_left < 0) ? 0 : $prepaid_left;
+                    }
+
+                    $member->update();
+
+                } else {
+                    $remaining = $images - Auth::user()->available_images;
+                    $user->available_images = 0;
+
+                    $prepaid_left = Auth::user()->available_images_prepaid - $remaining;
+                    $user->available_images_prepaid = ($prepaid_left < 0) ? 0 : $prepaid_left;
                 }
             }
         }
+
+        $user->update();
+
     }
 
-    if (!empty($results)) {
-        return response()->json(['results' => $results]);
-    } else {
-        return response()->json(['results' => 'No results found for your query.']);
+
+     /**
+	*
+	* Process media file
+	* @param - file id in DB
+	* @return - confirmation
+	*
+	*/
+	public function view(Request $request) 
+    {
+        if ($request->ajax()) {
+
+            $image = VideoResult::where('id', request('id'))->first(); 
+
+            if ($image) {
+                if ($image->user_id == Auth::user()->id){
+
+
+                    $data['status'] = 'success';
+                    return $data;
+        
+                } else{
+    
+                    $data['status'] = 'error';
+                    $data['message'] = __('There was an error while retrieving this image');
+                    return $data;
+                }  
+            } else {
+                $data['status'] = 'error';
+                $data['message'] = __('Image was not found');
+                return $data;
+            }
+            
+        }
+	}
+
+
+    /**
+	*
+	* Delete File
+	* @param - file id in DB
+	* @return - confirmation
+	*
+	*/
+	public function delete(Request $request) 
+    {
+        if ($request->ajax()) {
+
+            $image = VideoResult::where('id', request('id'))->first(); 
+
+            if ($image->user_id == auth()->user()->id){
+
+                switch ($image->storage) {
+                    case 'local':
+                        if (Storage::disk('public')->exists($image->image)) {
+                            Storage::disk('public')->delete($image->image);
+                        }
+                        break;
+                    case 'aws':
+                        if (Storage::disk('s3')->exists($image->image_name)) {
+                            Storage::disk('s3')->delete($image->image_name);
+                        }
+                        break;
+                    case 'wasabi':
+                        if (Storage::disk('wasabi')->exists($image->image_name)) {
+                            Storage::disk('wasabi')->delete($image->image_name);
+                        }
+                        break;
+                    case 'storj':
+                        if (Storage::disk('storj')->exists($image->image_name)) {
+                            Storage::disk('storj')->delete($image->image_name);
+                        }
+                        break;
+                    case 'gcp':
+                        if (Storage::disk('gcs')->exists($image->image_name)) {
+                            Storage::disk('gcs')->delete($image->image_name);
+                        }
+                        break;
+                    case 'dropbox':
+                        if (Storage::disk('dropbox')->exists($image->image_name)) {
+                            Storage::disk('dropbox')->delete($image->image_name);
+                        }
+                        break;
+                    default:
+                        # code...
+                        break;
+                }
+
+                $image->delete();
+
+                $data['status'] = 'success';
+                return $data;  
+    
+            } else{
+
+                $data['status'] = 'error';
+                $data['message'] = __('There was an error while deleting the image');
+                return $data;
+            }  
+        }
+	}
+
+
+    public function build_post_fields( $data,$existingKeys='',&$returnArray=[])
+    {
+        if(($data instanceof \CURLFile) or !(is_array($data) or is_object($data))){
+            $returnArray[$existingKeys]=$data;
+            return $returnArray;
+        }
+        else{
+            foreach ($data as $key => $item) {
+                $this->build_post_fields($item,$existingKeys?$existingKeys."[$key]":$key,$returnArray);
+            }
+            return $returnArray;
+        }
     }
+    
 
-}
-
-public function viewSmartAds(Request $request){
-    if(auth()->user()->plan_id != null){
-		$plan_id = auth()->user()->plan_id;
-		$plans = SubscriptionPlan::where('status', 'active')->where('smart_ads_feature', 1)->get();
-
-		$planIdAvailable = $plans->contains('id', $plan_id);
-
-		if ($planIdAvailable) {
-			return view('user.video.smart-ad');
-		} else {
-			$monthly = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'monthly')->where('smart_ads_feature', 1)->count();
-			$yearly = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'yearly')->where('smart_ads_feature', 1)->count();
-			$lifetime = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'lifetime')->where('smart_ads_feature', 1)->count();
-			$prepaid = PrepaidPlan::where('status', 'active')->count();
-
-			$monthly_subscriptions = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'monthly')->where('smart_ads_feature', 1)->get();
-			$yearly_subscriptions = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'yearly')->where('smart_ads_feature', 1)->get();
-			$lifetime_subscriptions = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'lifetime')->where('smart_ads_feature', 1)->get();
-			$prepaids = PrepaidPlan::where('status', 'active')->get();
-
-			return view('user.plans.index', compact('monthly', 'yearly', 'monthly_subscriptions', 'yearly_subscriptions', 'prepaids', 'prepaid', 'lifetime', 'lifetime_subscriptions'));
-		}
-	}
-	else{
-
-		$monthly = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'monthly')->where('smart_ads_feature', 1)->count();
-        $yearly = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'yearly')->where('smart_ads_feature', 1)->count();
-        $lifetime = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'lifetime')->where('smart_ads_feature', 1)->count();
-        $prepaid = PrepaidPlan::where('status', 'active')->count();
-
-        $monthly_subscriptions = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'monthly')->where('smart_ads_feature', 1)->get();
-        $yearly_subscriptions = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'yearly')->where('smart_ads_feature', 1)->get();
-        $lifetime_subscriptions = SubscriptionPlan::where('status', 'active')->where('payment_frequency', 'lifetime')->where('smart_ads_feature', 1)->get();
-        $prepaids = PrepaidPlan::where('status', 'active')->get();
-
-        return view('user.plans.index', compact('monthly', 'yearly', 'monthly_subscriptions', 'yearly_subscriptions', 'prepaids', 'prepaid', 'lifetime', 'lifetime_subscriptions'));
-	}      
-}
-
-public function agentAi(Request $request)
-{
-
-	$curl = curl_init();
-
-	curl_setopt_array($curl, array(
-	CURLOPT_URL => 'https://app.superagi.com/api/v1/agent',
-	CURLOPT_RETURNTRANSFER => true,
-	CURLOPT_ENCODING => '',
-	CURLOPT_MAXREDIRS => 10,
-	CURLOPT_TIMEOUT => 0,
-	CURLOPT_FOLLOWLOCATION => true,
-	CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-	CURLOPT_CUSTOMREQUEST => 'POST',
-	CURLOPT_POSTFIELDS =>'{
-		"name": "Aug 17 MS 2606",
-		"description": "AI assistant to solve complex problems",
-		"goal": ["create a photo of a cat"],
-		"agent_workflow": "Goal Based Workflow", 
-		"constraints": [
-			"~4000 word limit for short term memory.",
-			"Your short term memory is short, so immediately save important information to files.",
-			"If you are unsure how you previously did something or want to recall past events, thinking about similar events will help you remember.",
-			"No user assistance",
-			"Exclusively use the commands listed in double quotes e.g. \\"command name\\""
-		],
-		"instruction": [],
-		"tools":[
-			{   
-				"name":"Image Generation Toolkit"
-			},
-			{   
-				"name":"DuckDuckGo Search Toolkit"
-			},
-			{   
-				"name":"Email Toolkit"
-			}
-		],
-		"iteration_interval": 500,
-		"model": "gpt-4",
-		"max_iterations": 25,
-		"schedule": { 
-			"start_time": "2023-08-14 21:32:00",
-			"recurrence_interval": "2 Minutes",
-			"expiry_runs": 2,
-			"expiry_date": null
-		}
-	}',
-	CURLOPT_HTTPHEADER => array(
-		'X-API-Key: 5e0cf6b4-48e5-4f0c-b787-9484dd81d319',
-		'Content-Type: application/json'
-	),
-	));
-
-	$response = curl_exec($curl);
-
-	curl_close($curl);
-	echo $response;
-
-	$ch = curl_init();
-
-	curl_setopt($ch, CURLOPT_URL, 'https://api.superagi.com/model/65437cbf227a4018516ad1ce');
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_POST, 1);
-	curl_setopt($ch, CURLOPT_POSTFIELDS, "{\n  \"prompt\": [\"Draft a policy outlining the benefits that will be provided to employees.\"],\n  \"max_tokens\": 300,\n  \"temperature\": 0.9,\n  \"top_p\": 0.1,\n  \"n\": 1,\n  \"presence_penalty\": 0,\n  \"frequency_penalty\": 0,\n  \"best_of\": 1,\n  \"top_k\": 10\n}");
-
-	$headers = array();
-	$headers[] = 'Content-Type: application/json';
-	$headers[] = 'Authorization: Bearer 4e41541a355de529';
-	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-	$result = curl_exec($ch);
-	dd(response()->json($result));
-	if (curl_errno($ch)) {
-		echo 'Error:' . curl_error($ch);
-	}
-	curl_close($ch);
-
-    return view('user.video.agentAi');
-
-}
-public function agentAiCreate(Request $request)
-{
-	$ch = curl_init();
-
-	curl_setopt($ch, CURLOPT_URL, 'https://api.superagi.com/model/65437cbf227a4018516ad1ce');
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_POST, 1);
-	curl_setopt($ch, CURLOPT_POSTFIELDS, "{\n  \"prompt\": [\"Draft a policy outlining the benefits that will be provided to employees.\"],\n  \"max_tokens\": 300,\n  \"temperature\": 0.9,\n  \"top_p\": 0.1,\n  \"n\": 1,\n  \"presence_penalty\": 0,\n  \"frequency_penalty\": 0,\n  \"best_of\": 1,\n  \"top_k\": 10\n}");
-
-	$headers = array();
-	$headers[] = 'Content-Type: application/json';
-	$headers[] = 'Authorization: Bearer 4e41541a355de529';
-	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-	$result = curl_exec($ch);
-	
-	if (curl_errno($ch)) {
-		echo 'Error:' . curl_error($ch);
-	}
-	curl_close($ch);
-
-    return response()->json($result);
-
-}
 
 }

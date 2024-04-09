@@ -42,6 +42,7 @@ return new class extends Migration
             $table->boolean('code_feature')->nullable()->default(1);
             $table->boolean('chat_feature')->nullable()->default(1);
             $table->boolean('smart_ads_feature')->nullable()->default(1);
+            $table->boolean('automation_feature')->nullable()->default(0)->comment('Automation Feature');
             $table->string('paypal_gateway_plan_id')->nullable();
             $table->string('stripe_gateway_plan_id')->nullable();
             $table->string('paystack_gateway_plan_id')->nullable();
@@ -49,6 +50,13 @@ return new class extends Migration
             $table->string('flutterwave_gateway_plan_id')->nullable();
             $table->string('paddle_gateway_plan_id')->nullable();
             $table->integer('team_members')->nullable();
+            $table->boolean('personal_openai_api')->default(false)->nullable();
+            $table->boolean('personal_sd_api')->default(false)->nullable();
+            $table->integer('days')->nullable();
+            $table->string('dalle_image_engine')->nullable();
+            $table->string('sd_image_engine')->nullable();
+            $table->boolean('wizard_feature')->nullable()->default(1);
+            $table->boolean('vision_feature')->nullable()->default(1);
             $table->timestamps();
         });
     }

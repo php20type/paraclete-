@@ -1,3 +1,4 @@
+
 <?php $__env->startSection('css'); ?>
 	<style>
 		 #search-results {
@@ -47,30 +48,11 @@
 				<li class="nav-item" role="presentation">
 					<button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true"><?php echo e(__('All Feeds')); ?></button>
 				</li>
+				<?php $__currentLoopData = $dataSet; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $data): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
 				<li class="nav-item category-check" role="presentation">
-					<button class="nav-link" id="_RYsWZ9OeDQHQCTg2" data-bs-toggle="tab" type="button" role="tab" aria-selected="false">Health</button>
+					<button class="nav-link" id="<?php echo e($data['id']); ?>" data-bs-toggle="tab" type="button" role="tab" aria-selected="false"><?php echo e($data['name']); ?></button>
 				</li>
-				<li class="nav-item category-check" role="presentation">
-					<button class="nav-link" id="_n1QotSUYowwrJjIA" data-bs-toggle="tab" type="button" role="tab" aria-selected="false">Tech</button>
-				</li>
-				<li class="nav-item category-check" role="presentation">
-					<button class="nav-link" id="_P9LH3ZMqFguPwwJO" data-bs-toggle="tab" type="button" role="tab" aria-selected="false">Celebrities</button>
-				</li>
-				<li class="nav-item category-check" role="presentation">
-					<button class="nav-link" id="_Rmd3syXqrdext3KW" data-bs-toggle="tab" type="button" role="tab" aria-selected="false">Finance</button>
-				</li>
-				<li class="nav-item category-check" role="presentation">
-					<button class="nav-link" id="_JlUJdasNOJQn12Zh" data-bs-toggle="tab" type="button" role="tab" aria-selected="false">Business</button>
-				</li>
-				<li class="nav-item category-check" role="presentation">
-					<button class="nav-link" id="_tjyAmFvZp6DCZcab" data-bs-toggle="tab" type="button" role="tab" aria-selected="false">Lifestyle</button>
-				</li>
-				<li class="nav-item category-check" role="presentation">
-					<button class="nav-link" id="_aiRC2fdzB50IV3Zy" data-bs-toggle="tab" type="button" role="tab" aria-selected="false">Sports</button>
-				</li>
-				<li class="nav-item category-check" role="presentation">
-					<button class="nav-link" id="_AZBlMwVTKQl7JvRX" data-bs-toggle="tab" type="button" role="tab" aria-selected="false">Paraclete's Hourly Viral News Feed!</button>
-				</li>
+				<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 			</ul>
 		</div>
 	</div>	

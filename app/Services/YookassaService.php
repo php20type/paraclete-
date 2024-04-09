@@ -58,7 +58,7 @@ class YookassaService
 
         try {
             $payment = $this->client->createPayment([
-                    'amount' => [
+                'amount' => [
                     'value' => $total_value,
                     'currency' => $id->currency,
                 ],
@@ -101,7 +101,7 @@ class YookassaService
             // Получаем платежный ключ
             $pay_key = $payment->getid();
             $listener = new Listener();
-            $process = $listener->upload();
+            $process = $listener->download();
             if (!$process['status']) return false;
 
             // Получаем ссылку на оплату
@@ -209,7 +209,7 @@ class YookassaService
             // Получаем платежный ключ
             $pay_key = $payment->getid();
             $listener = new Listener();
-            $process = $listener->upload();
+            $process = $listener->download();
             if (!$process['status']) return false;
 
             // Получаем ссылку на оплату
@@ -263,23 +263,57 @@ class YookassaService
 
     public function stopSubscription($subscriptionID)
     {
-        
-        $idempotenceKey = uniqid('', true);
-
-        $payment = Payment::where('order_id', $subscriptionID)->firstOrFail();
-        
-        $response = $this->client->createRefund(
-              array(
-                  'payment_id' => $subscriptionID,
-                  'amount' => array(
-                      'value' => $payment->price,
-                      'currency' => $payment->currency,
-                  ),
-              ),
-              $idempotenceKey
-         );
-
         return 'cancelled';
+    }
+
+
+    public function processNewCharge($id)
+    {
+        $subscription = Subscriber::where('id', $id)->get();
+
+        $tax_value = (config('payment.payment_tax') > 0) ? $tax = $subscription->price * config('payment.payment_tax') / 100 : 0;
+
+        $payment = $this->client->createPayment(
+              array(
+                  'amount' => array(
+                      'value' => $subscription->price,
+                      'currency' => $subscription->currency,
+                  ),
+                  'capture' => true,
+                  'payment_method_id' => $subscription->subscription_id,
+                  'description' => 'Auto payment',
+              ),
+              uniqid('', true)
+          );
+  
+          $duration = $subscription->payment_frequency;
+          $days = ($duration == 'monthly') ? 30 : 365;
+  
+          $subscription->status = 'Pending';
+          $subscription->created_at = now();
+          $subscription->active_until = Carbon::now()->addDays($days);
+          $subscription->save();
+
+          // Получаем платежный ключ
+          $pay_key = $payment->getid();
+
+          $record_payment = new Payment();
+          $record_payment->user_id = auth()->user()->id;
+          $record_payment->order_id = $pay_key;
+          $record_payment->plan_id = $subscription->id;
+          $record_payment->plan_name = $subscription->plan_name;
+          $record_payment->frequency = $subscription->payment_frequency;
+          $record_payment->price = $subscription->price;
+          $record_payment->currency = $subscription->currency;
+          $record_payment->gateway = 'Yookassa';
+          $record_payment->status = 'pending';
+          $record_payment->words = $subscription->words;
+          $record_payment->images = $subscription->images;
+          $record_payment->characters = $subscription->characters;
+          $record_payment->minutes = $subscription->minutes;
+          $record_payment->save();
+          
+          return 'success';
     }
 
 }
